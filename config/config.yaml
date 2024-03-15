@@ -1,0 +1,34 @@
+light_sensitive_sensor:
+  [
+    "sensor_0": {
+      # do number should be BCM number
+      do: 22,
+      ao: 0x10,
+      status: enable
+    },
+    "sensor_1": {
+      do: 23,
+      ao: 0x11,
+      status: enable
+    },
+    "sensor_2": {
+      do: 24,
+      ao: 0x12,
+      status: enable
+    }
+  ]
+
+connect_type:
+  type:
+  adb:
+    device: "48854121100023837"
+  telnet:
+    ip: '192.168.50.249'
+sensor_board_addr: 0x24
+
+power_crt: 192.168.50.98
+
+repeat_test: 5
+
+  
+

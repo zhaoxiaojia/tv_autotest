@@ -1,0 +1,61 @@
+# All notes end with two values, the coordinates of x and y.
+# The origin of the coordinates is in the lower left corner of the screen and the unit is percentage
+launcher_power_50_40: # eg: x 45%, y 48%
+  '43inch':
+    do: 1
+    ao: [950,985]
+  '32inch':
+    do: 1
+    ao: [900,935]
+
+pure_white_50_45:
+  '43inch':
+    do: 0
+    ao: [200,350]
+  '32inch':
+    do: 0
+    ao: [200,350]
+
+backlight_off:
+  '43inch':
+    do: 1
+    ao: [1000,1010]
+  '32inch':
+    do: 1
+    ao: [950,1010]
+
+launcher_50_40:
+  '43inch':
+    do: 0
+    ao: [200,450]
+  '32inch':
+    do: 0
+    ao: [400,650]
+
+netflix_15_70:
+  '43inch':
+    do: 2
+    ao: [0,600]
+  '32inch':
+    do: 2
+    ao: [0,500]
+
+youtube_85_90:
+  '43inch':
+    do: 0
+    ao: [0,430]
+  '32inch':
+    do: 0
+    ao: [0,500]
+
+wifi_scan:
+  '43inch':
+    do: 0
+    ao: [0,650]
+  '32inch':
+    do: 0
+    ao: [0,450]
+
+serial_crt:
+  port: /dev/ttyUSB0
+  baud: 115200

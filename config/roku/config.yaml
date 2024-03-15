@@ -1,0 +1,19 @@
+# 信号发射器 相关配置
+pattern_generator:
+  # 目前只支持 8100s
+  device: master_8100s
+  # 串口连接方式
+  connect: serial
+  # 串口配置
+  serial_setting:
+    path: COM7
+    baud: 115200
+
+# 待测产品 ip
+dut_ip: 192.168.50.109
+
+# 待测产品串口信息
+dut_serial:
+  path: COM8
+  baud: 115200
+

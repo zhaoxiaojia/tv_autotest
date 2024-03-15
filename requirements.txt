@@ -1,0 +1,11 @@
+pyyaml
+pytest
+pytest-html
+pytest-loop
+pytest-repeat
+pyserial
+pysnmp
+uiautomator2
+uiautomator
+roku
+selenium
