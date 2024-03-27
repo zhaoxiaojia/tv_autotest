@@ -10,8 +10,8 @@
 import logging
 import time
 
-from Phidget22.Phidget import *
 from Phidget22.Devices.LightSensor import *
+from Phidget22.Phidget import *
 
 illuminance_value = 0
 
@@ -34,6 +34,8 @@ class lightSensor():
 			target = range(*target)
 		if type(inflection_point) == int:
 			inflection_point = [inflection_point, ]
+		logging.info(f'Illumiance should in {target}')
+		logging.info('Catch illumiance')
 		count_temp = 0
 		start = time.time()
 		inflection_flag = False
@@ -59,9 +61,10 @@ class lightSensor():
 			# if temp % 5 == 0:
 			# 	print('Illumiance: ' + str(illuminance_value))
 			if illuminance_value in target:
-				logging.info(f'Illumiance: {illuminance_value}')
+				logging.info(f'Illumiance in expect :  {illuminance_value}')
 				return 1
 		else:
+			logging.info(f'Current illumiance : {illuminance_value}')
 			logging.warning("Can't catch the targe data")
 			return 0
 

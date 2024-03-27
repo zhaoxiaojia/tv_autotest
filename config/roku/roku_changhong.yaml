@@ -13,12 +13,12 @@ setting_white:
     ao: [ 150,350 ]
 
 color_bar:
-  'EcoSave': 160
-  'Vivid': 196
-  'Sports': 195
-  'Movie': 172
-  'Normal': 190
-  'Store': 197
+  'EcoSave': [140,160]
+  'Vivid': [168,196]
+  'Sports': [168,195]
+  'Movie': [143,172]
+  'Normal': [168,194]
+  'Store': [168,197]
 
 #color_bar_size:
 #  'Auto':

@@ -151,7 +151,7 @@ class RokuCtrl(Roku, Ir):
 			'on': 'echo 0xD > /sys/class/remote/amremote/protocol',
 			'off': 'echo 0x2 > /sys/class/remote/amremote/protocol'
 		}
-
+		logging.info(f'Set roku ir {status}')
 		self.ser.write(ir_command[status])
 
 	def get_display_size(self, size):
@@ -183,6 +183,7 @@ class RokuCtrl(Roku, Ir):
 				raise IndexError("Doesn't support this mode, pls check again")
 			logging.info(f'Try to set picture mode into {mode}')
 			self.info()
+			# time.sleep(2)
 			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
 			if not res:
 				self.info()
@@ -207,6 +208,7 @@ class RokuCtrl(Roku, Ir):
 				raise IndexError("Doesn't support this mode, pls check again")
 			logging.info(f'Try to set picture size into {size}')
 			self.info()
+			# time.sleep(2)
 			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
 			if not res:
 				self.info()
@@ -283,17 +285,14 @@ class RokuCtrl(Roku, Ir):
 			if count > 5:
 				raise EnvironmentError("Pls check ir control")
 
-	def get_hdmirx_info(self):
-
+	def get_hdmirx_info(self, **kwargs):
+		logging.info(f'hdmirx for expect : {kwargs}')
 		def match(info):
 			res = re.findall(
-				r'Hactive|Vactive|Color Depth|Frame Rate|TMDS clock|HDR EOTF|Dolby Vision|HDCP Debug Value|HDCP14 state|HDCP22 state',
+				r'Hactive|Vactive|Color Depth|Frame Rate|TMDS clock|HDR EOTF|Dolby Vision|HDCP Debug Value|HDCP14 state|HDCP22 state|Color Space',
 				info)
 			if res:
 				return res
-
-		self.ser.write('cat /sys/class/hdmirx/hdmirx0/info')
-		info = self.ser.recv()
 		for _ in range(10):
 			try:
 				self.ser.write('cat /sys/class/hdmirx/hdmirx0/info')
@@ -303,11 +302,27 @@ class RokuCtrl(Roku, Ir):
 			if 'HDCP1.4 secure' in info:
 				break
 			time.sleep(1)
-		info = [i.strip() for i in info.split('\n') if match(i)]
 		logging.info(info)
+		info = [i.strip() for i in info.split('\n') if match(i)]
 		logging.info(' ,'.join(info[:5]))
 		logging.info(' ,'.join(info[5:]))
-		return info
+		result = {i.split(':')[0].strip(): i.split(':')[1].strip() for i in info}
+		for k, v in kwargs.items():
+			if k == 'depth':
+				k = 'Color Depth'
+			if k == 'space':
+				k = 'Color Space'
+			if k == 'frame':
+				k = 'Frame Rate'
+				if int(result[k]) not in range(*v):
+					logging.warning(f'{result[k]} not in expect , should in {v}')
+					return False
+			else:
+				if result[k] != v:
+					logging.warning(f'{result[k]} not in expect , should be {v}')
+					return False
+		else:
+			return True
 
 # def wakeup(self):
 #     count = 0

@@ -22,9 +22,9 @@ import pytest
 from tool.dut_control.adb import Adb
 from tool.dut_control.irsend import Irsend
 from tool.dut_control.telnet_tool import TelnetTool
+from tool.pdusnmp import PowerCtrl
 # from tool.raspberry_sensor.lightsensor import LightSensor
 from tool.phidgets_sensor.light_sensor import lightSensor
-from tool.pdusnmp import PowerCtrl
 from tool.test_result import TestResult
 from tool.yaml_tool import YamlTool
 
@@ -81,7 +81,6 @@ def setup():
 
 
 def pytest_sessionfinish(session):
-	logging.info(pytest.result_data)
 	pytest.testResult.write_data(pytest.result_data)
 	shutil.copy("pytest.log", "debug.log")
 	shutil.move("debug.log", pytest.testResult.logDir)

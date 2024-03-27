@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import time, datetime, traceback
-from Phidget22.Phidget import *
-from Phidget22.Devices.LightSensor import *
-from Phidget22.Devices.SoundSensor import *
-from Phidget22.Devices.Log import *
-from Phidget22.LogLevel import *
+import datetime
+import time
+import traceback
 from collections import defaultdict
+
+from Phidget22.Devices.LightSensor import *
+from Phidget22.Devices.Log import *
+from Phidget22.Devices.SoundSensor import *
+from Phidget22.LogLevel import *
+from Phidget22.Phidget import *
 
 ch1 = LightSensor()
 ch2 = SoundSensor()

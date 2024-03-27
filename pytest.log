@@ -1,77 +1,0 @@
-2024-03-14 17:16:47 [   INFO] power crt ip address: 192.168.50.98 (pdusnmp.py:21)
-2024-03-14 17:16:47 [   INFO] Don't need adb or telnet control (conftest.py:60)
-2024-03-14 17:16:47 [   INFO] ['TestCase', 'Min', 'Max', 'Avg'] (test_result.py:22)
-2024-03-14 17:16:47 [   INFO] self.serial_port: COM8,self.baud: 115200 (serial_ctrl.py:33)
-2024-03-14 17:16:47 [   INFO] the serial port COM8-115200 is opened (serial_ctrl.py:47)
-2024-03-14 17:16:47 [   INFO] the status of serial port is True (serial_ctrl.py:56)
-2024-03-14 17:16:47 [   INFO] =>  (serial_ctrl.py:146)
-2024-03-14 17:16:48 [   INFO] => bg (serial_ctrl.py:146)
-2024-03-14 17:16:49 [   INFO] => echo 0x2 > /sys/class/remote/amremote/protocol (serial_ctrl.py:146)
-2024-03-14 17:17:03 [   INFO] Illumiance: 194 (light_sensor.py:62)
-2024-03-14 17:17:03 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:04 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:06 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:08 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:10 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:12 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:14 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:16 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:18 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:20 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:22 [   INFO] => cat /sys/class/hdmirx/hdmirx0/info (serial_ctrl.py:146)
-2024-03-14 17:17:24 [   INFO] [] (roku_ctrl.py:307)
-2024-03-14 17:17:24 [   INFO]  (roku_ctrl.py:308)
-2024-03-14 17:17:24 [   INFO]  (roku_ctrl.py:309)
-2024-03-14 17:17:34 [   INFO] Try to set picture mode into EcoSave (roku_ctrl.py:184)
-2024-03-14 17:17:34 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:17:49 [   INFO] current mode : EcoSave (roku_ctrl.py:171)
-2024-03-14 17:17:53 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:17:55 [   INFO] Illumiance: 163 (light_sensor.py:62)
-2024-03-14 17:18:05 [   INFO] Try to set picture mode into Vivid (roku_ctrl.py:184)
-2024-03-14 17:18:05 [   INFO] Illumiance: 216 (light_sensor.py:62)
-2024-03-14 17:18:12 [   INFO] current mode : Vivid (roku_ctrl.py:171)
-2024-03-14 17:18:15 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:18:17 [   INFO] Illumiance: 200 (light_sensor.py:62)
-2024-03-14 17:18:27 [   INFO] Try to set picture mode into Sports (roku_ctrl.py:184)
-2024-03-14 17:18:27 [   INFO] Illumiance: 200 (light_sensor.py:62)
-2024-03-14 17:18:30 [   INFO] current mode : Sports (roku_ctrl.py:171)
-2024-03-14 17:18:34 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:18:36 [   INFO] Illumiance: 197 (light_sensor.py:62)
-2024-03-14 17:18:46 [   INFO] Try to set picture mode into Movie (roku_ctrl.py:184)
-2024-03-14 17:18:46 [   INFO] Illumiance: 197 (light_sensor.py:62)
-2024-03-14 17:18:49 [   INFO] current mode : Movie (roku_ctrl.py:171)
-2024-03-14 17:18:52 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:18:54 [   INFO] Illumiance: 175 (light_sensor.py:62)
-2024-03-14 17:19:04 [   INFO] Try to set picture mode into Normal (roku_ctrl.py:184)
-2024-03-14 17:19:05 [   INFO] Illumiance: 224 (light_sensor.py:62)
-2024-03-14 17:19:14 [   INFO] current mode : Normal (roku_ctrl.py:171)
-2024-03-14 17:19:17 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:19:20 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:19:30 [   INFO] Try to set picture size into Direct (roku_ctrl.py:208)
-2024-03-14 17:19:30 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:19:42 [   INFO] current size : Direct (roku_ctrl.py:162)
-2024-03-14 17:19:46 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:19:48 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:19:58 [   INFO] Try to set picture size into Normal (roku_ctrl.py:208)
-2024-03-14 17:19:58 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:20:10 [   INFO] current size : Normal (roku_ctrl.py:162)
-2024-03-14 17:20:14 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:20:16 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:20:26 [   INFO] Try to set picture size into Stretch (roku_ctrl.py:208)
-2024-03-14 17:20:26 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:20:38 [   INFO] current size : Stretch (roku_ctrl.py:162)
-2024-03-14 17:20:42 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:20:44 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:20:54 [   INFO] Try to set picture size into Zoom (roku_ctrl.py:208)
-2024-03-14 17:20:54 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:21:06 [   INFO] current size : Zoom (roku_ctrl.py:162)
-2024-03-14 17:21:10 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:21:12 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:21:23 [   INFO] Try to set picture size into Auto (roku_ctrl.py:208)
-2024-03-14 17:21:23 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:21:35 [   INFO] current size : Auto (roku_ctrl.py:162)
-2024-03-14 17:21:39 [   INFO] Start to capture screen .... (roku_ctrl.py:139)
-2024-03-14 17:21:41 [   INFO] Illumiance: 193 (light_sensor.py:62)
-2024-03-14 17:21:51 [   INFO] => echo 0xD > /sys/class/remote/amremote/protocol (serial_ctrl.py:146)
-2024-03-14 17:21:52 [   INFO] defaultdict(<class 'list'>, {}) (conftest.py:84)
-2024-03-14 17:21:52 [   INFO] statisticis in progress (test_result.py:27)

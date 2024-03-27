@@ -5,8 +5,7 @@
 # @File    : __init__.py.py
 # @Project : kpi_test
 # @Software: PyCharm
-
-
+import logging
 import os
 
 from dut_control.roku_ctrl import RokuCtrl
@@ -14,18 +13,25 @@ from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.pil_tool import PilTool
 from tool.yaml_tool import YamlTool
 
-
 odm = 'changhong'
+mode_list = ['EcoSave', 'Vivid', 'Sports', 'Movie', 'Normal']
+size_list = ['Direct', 'Normal', 'Stretch', 'Zoom', 'Auto']
+
+skip_mode = True
+skip_size = True
+no_such_timming = True
 
 roku_lux = YamlTool(os.getcwd() + f'/config/roku/roku_{odm}.yaml')
 roku_env = YamlTool(os.getcwd() + '/config/roku/config.yaml')
-if roku_env.get_note('pattern_generator')['device'] == 'master_8100s':
-    from tool.signal_generator.master_8100s import Master_8100s
 
-    pattern_gener = Master_8100s()
+hdmi = 'hdmi1'
+if roku_env.get_note('pattern_generator') == 'master_8100s':
+	from tool.signal_generator.master_8100s import Master_8100s
+
+	pattern_gener = Master_8100s()
 
 roku_ctl = RokuCtrl()
-roku_ctl.ser.write('\x1A')
-roku_ctl.ser.write('bg')
+# roku_ctl.ser.write('\x1A')
+# roku_ctl.ser.write('bg')
 pil = PilTool()
 # roku_serial = serial_crt(roku_lux.get_note('serial_crt')['port'], roku_lux.get_note('serial_crt')['baud'])

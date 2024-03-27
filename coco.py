@@ -7,12 +7,19 @@
 # @Software: PyCharm
 
 
-PTC_SIZE = {
-	'Auto': 0,
-	'Direct': 1,
-	'Normal': 2,
-	'Stretch': 3,
-	'Zoom': 4
-}
-
-print(list(PTC_SIZE.keys())[0])
+# class MyDict(dict):
+# 	def __init__(self, factory):
+# 		print(f' init factory {factory}')
+# 		self._factory = factory
+#
+# 	def __missing__(self, key):
+# 		v = self._factory()
+# 		print(f' missing factory {v}')
+# 		print(f' missing factory {self._factory}')
+# 		self[key] = v
+# 		return v
+#
+#
+# d = MyDict(list)
+# d['hello'].append(1)
+# print(d)

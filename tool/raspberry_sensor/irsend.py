@@ -6,11 +6,13 @@
 # @Project : kpi_test
 # @Software: PyCharm
 import logging
-import subprocess
 import os
+import subprocess
 import time
 
 from tool.exception import *
+
+
 class irsend:
     '''
 

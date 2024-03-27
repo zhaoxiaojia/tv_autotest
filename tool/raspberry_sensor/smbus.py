@@ -8,10 +8,11 @@
 
 
 
-from smbus2 import SMBus
+import logging
 
 import pytest
-import logging
+from smbus2 import SMBus
+
 
 class smbus:
     def __init__(self,ao_list:list=[]):

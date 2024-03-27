@@ -5,11 +5,11 @@
 # @File    : gpio.py
 # @Project : kpi_test
 # @Software: PyCharm
+import logging
 import time
 
-import RPi.GPIO as GPIO
 import pytest
-import logging
+import RPi.GPIO as GPIO
 
 
 class gpio:
