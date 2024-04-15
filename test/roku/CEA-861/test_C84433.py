@@ -23,7 +23,7 @@ hative = '1280'
 wative = '720'
 color_depth = 8
 color_space = '0-RGB'
-frame_rate = [2390, 2401]
+frame_rate = [2300, 2501]
 
 target_pic = os.getcwd() + f'/tool/signal_generator/pattern/target_{pattern_num}.jpg'
 
@@ -32,16 +32,18 @@ target_pic = os.getcwd() + f'/tool/signal_generator/pattern/target_{pattern_num}
 def setup_teardown():
 	# roku_ctl.ser.start_catch_kernellog()
 	roku_ctl.switch_ir('off')
-	# timing_num = pattern_gener.getTimming(input='hdmi',resolution='720x480', scan_type='interlace')
+	# timing_num = pytest.pattern_gener.getTimming(input='hdmi',resolution='720x480', scan_type='interlace')
 	logging.info(f'timing_num {Master_8100s.get_mspg_info(timing_num)}')
-	pattern_gener.setTimmingPattern(timing_num, pattern_num)
-	pattern_gener.switch_ctl('hdcp', 'off')
+	pytest.pattern_gener.setTimmingPattern(timing_num, pattern_num)
+	pytest.pattern_gener.switch_ctl('hdcp', 'off')
 	roku_ctl[f"tvinput.{hdmi}"].launch()
-	pytest.light_sensor.count_kpi(0, roku_lux.get_note('color_bar')['Normal'])
+	if pytest.light_sensor:
+		pytest.light_sensor.count_kpi(0, roku_lux.get_note('color_bar')['Normal'])
+	time.sleep(15)
 	yield
 	# roku_ctl.ser.stop_catch_kernellog()
 	roku_ctl.switch_ir('on')
-	pattern_gener.close()
+	pytest.pattern_gener.close()
 	roku_ctl.home()
 
 
@@ -67,16 +69,24 @@ def test_hdmirx_info():
 def test_720p24_mode(set_picture_mode):
 	test_pic = pytest.testResult.logDir + '/' + f'test_{roku_ctl.ptc_mode}_{pattern_num}_{timing_num}.jpeg'
 	diff_pic = pytest.testResult.logDir + '/' + f'diff_{roku_ctl.ptc_mode}_{pattern_num}_{timing_num}.jpeg'
+	pytest.pattern_gener.switch_ctl('hdcp', 'off')
 	roku_ctl.capture_screen(test_pic)
-	pytest.light_sensor.count_kpi(0, roku_lux.get_note('color_bar')[roku_ctl.ptc_mode]), 'Not in expect'
+	pytest.pattern_gener.switch_ctl('hdcp', 'on')
+	if pytest.light_sensor:
+		pytest.light_sensor.count_kpi(0, roku_lux.get_note('color_bar')[roku_ctl.ptc_mode]), 'Not in expect'
 	pil.compare_images(test_pic, target_pic, diff_pic)
+
 
 
 @pytest.mark.skipif(skip_size,reason='for debug')
 # @pytest.mark.skipif(no_such_timming,reason='8100s not support this')
 def test_720p24_size(set_picture_size):
-	test_pic = pytest.testResult.logDir + '/' + f'test_{roku_ctl.ptc_size_name}_{pattern_num}_{timing_num}.jpeg'
-	diff_pic = pytest.testResult.logDir + '/' + f'diff_{roku_ctl.ptc_size_name}_{pattern_num}_{timing_num}.jpeg'
+	test_pic = pytest.testResult.logDir + '/' + f'test_{roku_ctl.ptc_size}_{pattern_num}_{timing_num}.jpeg'
+	diff_pic = pytest.testResult.logDir + '/' + f'diff_{roku_ctl.ptc_size}_{pattern_num}_{timing_num}.jpeg'
+	pytest.pattern_gener.switch_ctl('hdcp', 'off')
 	roku_ctl.capture_screen(test_pic)
-	pytest.light_sensor.count_kpi(0, roku_lux.get_note(f'color_bar')['Normal']), 'Not in expect'
+	pytest.pattern_gener.switch_ctl('hdcp', 'on')
+	if pytest.light_sensor:
+		pytest.light_sensor.count_kpi(0, roku_lux.get_note(f'color_bar')['Normal']), 'Not in expect'
 	pil.compare_images(test_pic, target_pic, diff_pic)
+

@@ -7,19 +7,9 @@
 # @Software: PyCharm
 
 
-# class MyDict(dict):
-# 	def __init__(self, factory):
-# 		print(f' init factory {factory}')
-# 		self._factory = factory
-#
-# 	def __missing__(self, key):
-# 		v = self._factory()
-# 		print(f' missing factory {v}')
-# 		print(f' missing factory {self._factory}')
-# 		self[key] = v
-# 		return v
-#
-#
-# d = MyDict(list)
-# d['hello'].append(1)
-# print(d)
+
+for _ in range(3):
+	print('coco is handsome')
+	break
+else:
+	raise UnicodeError('fxxk')

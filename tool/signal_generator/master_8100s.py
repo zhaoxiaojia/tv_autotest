@@ -1649,12 +1649,18 @@ mspg_table = [
 
 
 class Master_8100s:
+	_instance = None
+
+	def __new__(cls, *args, **kw):
+		if cls._instance is None:
+			cls._instance = object.__new__(cls, *args, **kw)
+		return cls._instance
 
 	def __init__(self):
+		logging.info('init master 8100s')
 		self.serial_data = YamlTool(os.getcwd() + '/config/config.yaml').get_note('pattern_generator')[
 			'serial_setting']
-		# self.serial_data = YamlTool(r'D:\PycharmProjects\tv_autotest\config\roku\config.yaml').get_note('pattern_generator')[
-		# 	'serial_setting']
+		# self.serial_data = {'path':'COM7','baud':115200}
 		self.serialport = serial.Serial(self.serial_data['path'], self.serial_data['baud'])
 		self.serialport.bytesize = serial.EIGHTBITS  # number of bits per bytes
 		self.serialport.parity = serial.PARITY_NONE  # set parity check: no parity
@@ -1664,7 +1670,6 @@ class Master_8100s:
 		self.serialport.rtscts = False  # disable hardware (RTS/CTS) flow control
 		self.serialport.dsrdtr = False  # disable hardware (DSR/DTR) flow control
 		self.serialport.writeTimeout = 2  # timeout for write
-		self.serialport.write(b'\x05')
 
 		self.running_mode = ''
 		if self.serialport.isOpen():
@@ -1691,6 +1696,7 @@ class Master_8100s:
 		self.serialport.write(b'\x04')
 
 	def cmd_start(self):
+		self.serialport.write(b'\x05')
 		self.cmd = b'\x02'
 		self.serialport.write(self.cmd)
 
@@ -1709,9 +1715,9 @@ class Master_8100s:
 
 	def switch_ctl(self, name, status):
 		logging.info(f'Set 8100s {name} {status}')
-		status = {'on': 1, 'off': 0}[status]
+		index = {'on': 1, 'off': 0}[status]
 		if name in ['horizontal_freq', 'vertical_freq']:
-			status = int(not (status))
+			index = int(not (index))
 		cmd = {
 			1: b'\x31',
 			0: b'\x30'
@@ -1723,17 +1729,21 @@ class Master_8100s:
 			'vertical_freq': b'\x0C'
 		}
 		for i in range(3):
-			print(f'{name.title()} status: {status}')
+			# print(f'{name.title()} status: {status}')
+			# if status == 'on':
+			# 	time.sleep(5)
 			self.cmd_start()
 			self.serialport.write(code[name])
-			self.serialport.write(cmd[status])
+			self.serialport.write(cmd[index])
 			result = self.cmd_stop()
 			if result:
+				if status == 'off':
+					time.sleep(5)
 				return True
 
 	def setTimmingPattern(self, timming, pattern):
 		for _i in range(3):
-			print(timming, pattern)
+			# print(timming, pattern)
 			self.cmd_start()
 			self.cmd = b"\x09"
 			self.serialport.write(self.cmd)
@@ -1746,7 +1756,7 @@ class Master_8100s:
 			result = self.cmd_stop(2)
 			if result:
 				return True
-		print("# Ack Messages is not found")
+		logging.info("# Ack Messages is not found")
 		return False
 
 	def getTimming(self, **kwargs):
@@ -1766,8 +1776,10 @@ class Master_8100s:
 		return result[0] if isinstance(result, list) else result
 
 	def __del__(self):
-		if hasattr(self, 'serialport') and isinstance(self.serialport, serial.Serial) and self.serialport.is_open:
+		try:
 			self.serialport.close()
+		except Exception:
+			...
 
 
 # master = Master_8100s()
@@ -1795,9 +1807,8 @@ if __name__ == '__main__':
 		for i in result:
 			print(i)
 
-
-	# get_timming(input='hdmi',resolution='1920x1080', scan_type='progressive')
-	# get_timming(resolution='4096x2160', v_freq='60.000')
+# get_timming(input='hdmi',resolution='1920x1080', scan_type='progressive')
+# get_timming(resolution='4096x2160', v_freq='60.000')
 # get_timming(remark='VESA_Standard',resolution='720x400')
 # get_timming(input='hdmi',resolution='720x576', scan_type='interlace')
 # 	print(Master_8100s.get_mspg_info('295'))

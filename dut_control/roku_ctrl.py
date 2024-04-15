@@ -10,6 +10,7 @@
 import logging
 import os
 import re
+import threading
 import time
 from threading import Thread
 from urllib.parse import quote_plus, urlparse
@@ -21,6 +22,7 @@ from roku import Roku
 from dut_control.ir import Ir
 from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.yaml_tool import YamlTool
+from tool.dut_control.telnet_tool import TelnetTool
 
 COMMANDS = {
 	# Standard Keys
@@ -69,6 +71,8 @@ roku_config = YamlTool(os.getcwd() + '/config/roku/config.yaml')
 roku_ip = roku_config.get_note('dut_ip')
 roku_ser = roku_config.get_note('dut_serial')
 
+lock = threading.Lock()
+
 
 def decode_ignore(info):
 	info.decode('utf-8', 'backslashreplace_backport') \
@@ -80,22 +84,29 @@ def decode_ignore(info):
 
 
 class RokuCtrl(Roku, Ir):
-	PTC_SIZE = {
-		'Auto': 0,
-		'Direct': 1,
-		'Normal': 2,
-		'Stretch': 3,
-		'Zoom': 4
-	}
+	# PTC_SIZE = {
+	# 	'Auto': 0,
+	# 	'Direct': 1,
+	# 	'Normal': 2,
+	# 	'Stretch': 3,
+	# 	'Zoom': 4
+	# }
+	_instance = None
+
+	def __new__(cls, *args, **kw):
+		if cls._instance is None:
+			cls._instance = object.__new__(cls, *args, **kw)
+		return cls._instance
 
 	def __init__(self):
 		super(RokuCtrl, self).__init__(roku_ip)
-		self.ir = pytest.irsend
 		self.settings = ['Network', 'Accessibility', 'TV picture settings', 'TV inputs', 'Audio', 'Guest Mode',
 		                 'Home screen', 'Payment method', 'Apple AirPlay and HomeKit', 'Legal notices', 'Privacy',
 		                 'Help', 'System']
 		self.launcher = ['Home', 'Live TV', 'What to Watch', 'Featured Free', 'Sports', 'Search',
-		                 'Streaming Store', 'Settings', 'Secret Screens', 'Debug']
+		                 'Streaming Store', 'Settings', 'Secret Screens', 'Debu293g']
+		self.hdmi_tv_setting = ['Sleep timer', 'Picture settings', 'Sound settings', 'Accessibility', 'Picture off']
+
 		self.source = {
 			'HDMI 1': 'hdmi1',
 			'HDMI 2': 'hdmi2',
@@ -103,9 +114,11 @@ class RokuCtrl(Roku, Ir):
 			'AV': 'cvbs',
 			'Live TV': 'dtv',
 		}
+		self.ip = roku_ip
 		self.roku = Roku(roku_ip)
 		self.ser = SerialCtrl(roku_ser['path'], roku_ser['baud'])
 		self.ptc_size, self.ptc_mode = '', ''
+		self.get_kernel_log()
 
 	def __getattr__(self, name):
 		if name not in COMMANDS and name not in SENSORS:
@@ -146,48 +159,65 @@ class RokuCtrl(Roku, Ir):
 			handle.write(response)
 			handle.close()
 
+	def get_ir_focus(self):
+		# http://192.168.0.121:8060/query/focus/secret
+		url = f'http://{self.ip}:8060/query/focus/secret'
+		r = requests.get(url)
+		result = re.findall(r'<text>(.*?)</text>', r.content.decode('utf-8'), re.S)
+		if result:
+			logging.info(f"Current ir focus {result[0]}")
+			return result[0]
+		else:
+			return ''
+
 	def switch_ir(self, status):
 		ir_command = {
 			'on': 'echo 0xD > /sys/class/remote/amremote/protocol',
 			'off': 'echo 0x2 > /sys/class/remote/amremote/protocol'
 		}
 		logging.info(f'Set roku ir {status}')
-		self.ser.write(ir_command[status])
+		pytest.executer.checkoutput(ir_command[status])
 
 	def get_display_size(self, size):
-		info = self.ser.recv_until_pattern(b'Aspect ratio changed to ' + bytes(str(size), encoding='utf-8'))
-		# info = ''.join([i.decode('utf-8', "ignore") for i in info])
-		# temp = re.findall(r'Aspect ratio changed to (\d)', str(info), re.S)[0]
-		temp = {v: k for k, v in self.PTC_SIZE.items()}
-		logging.info(f'current size : {temp[size]}')
-		self.ptc_size = size
-		self.ptc_size_name = list(self.PTC_SIZE.keys())[self.ptc_size]
-		self.select(time=1)
+		for _ in range(7):
+			if self.get_ir_focus() == size:
+				self.ptc_size = size
+				self.select(time=1)
+				break
+			time.sleep(1)
+		else:
+			logging.warning(f"Can't set display size into {size}")
+		logging.info(f'Current size : {size}')
 
 	def get_display_mode(self, mode):
-		info = self.ser.recv_until_pattern(b'Picture mode changed to ' + bytes(mode, encoding='utf-8'))
-		# info = ''.join([i.decode('utf-8', "ignore") for i in info])
-		# mode = re.findall(r'Picture mode changed to (\w+)', info, re.S)[0]
-		logging.info(f'current mode : {mode}')
-		self.ptc_mode = mode
-		self.select(time=1)
+		for _ in range(7):
+			if self.get_ir_focus() == mode:
+				self.ptc_mode = mode
+				self.select(time=1)
+				break
+			time.sleep(1)
+		else:
+			logging.warning(f"Can't set display mode into {mode}")
+		logging.info(f'Current mode : {mode}')
 
 	def set_picture_mode(self, mode):
 		def ui_down(mode):
 			while self.ptc_mode != mode:
-				self.down(time=3)
+				self.down(time=1)
 
 		if self.ptc_mode != mode:
-			mode_list = ['EcoSave', 'Normal', 'Vivid', 'Sports', 'Movie']
-			if mode not in mode_list:
-				raise IndexError("Doesn't support this mode, pls check again")
+			# mode_list = ['EcoSave', 'Normal', 'Vivid', 'Sports', 'Movie']
+			# if mode not in mode_list:
+			# 	raise IndexError("Doesn't support this mode, pls check again")
 			logging.info(f'Try to set picture mode into {mode}')
 			self.info()
-			# time.sleep(2)
-			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-			if not res:
-				self.info()
-			# self.down(time=1)
+			if pytest.light_sensor:
+				res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+				if not res:
+					self.info()
+			else:
+				time.sleep(3)
+			self.down(time=1)
 			self.select(time=1)
 			self.down(time=1)
 			self.select(time=1)
@@ -201,18 +231,19 @@ class RokuCtrl(Roku, Ir):
 	def set_picture_size(self, size):
 		def ui_down(size):
 			while self.ptc_size != size:
-				self.down(time=3)
+				self.down(time=1)
 
 		if self.ptc_size != size:
-			if size not in self.PTC_SIZE:
-				raise IndexError("Doesn't support this mode, pls check again")
-			logging.info(f'Try to set picture size into {size}')
+			# if size not in self.PTC_SIZE:
+			# 	raise IndexError("Doesn't support this mode, pls check again")
+			# logging.info(f'Try to set picture size into {size}')
 			self.info()
-			# time.sleep(2)
-			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-			if not res:
-				self.info()
-			# self.down(time=1)
+			if pytest.light_sensor:
+				res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+				if not res:
+					self.info()
+			time.sleep(3)
+			self.down(time=1)
 			self.select(time=1)
 			self.down(time=1)
 			self.down(time=1)
@@ -220,13 +251,37 @@ class RokuCtrl(Roku, Ir):
 			for _ in range(6):
 				self.down(time=1)
 			self.select(time=1)
-			t = Thread(target=ui_down, args=(self.PTC_SIZE[size],))
+			t = Thread(target=ui_down, args=(size,))
 			t.daemon = True
 			t.start()
-			self.get_display_size(self.PTC_SIZE[size])
+			self.get_display_size(size)
 			self.back(time=1)
 			self.back(time=1)
 			self.back(time=1)
+
+	def get_kernel_log(self):
+		def run_logcast():
+			logging.info('start telnet 8080 to caputre kernel log ')
+			tl = TelnetTool(self.ip, 'sandia')
+			info = tl.checkoutput(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
+			# logging.info(info)
+			time.sleep(2)
+			tl.checkoutput('\x1A')
+			tl.execute_cmd(f'telnet {self.ip} 8070')
+			while True:
+				info = tl.tn.read_very_eager()
+				if info != b'':
+					with open('kernel.log', 'a', encoding='utf-8') as f:
+						try:
+							info = info.decode('utf-8').strip()
+						except Exception as e:
+							info = ''
+						f.write(info)
+
+		logging.info("Open 8070 to get kernel log")
+		t = Thread(target=run_logcast)
+		t.daemon = True
+		t.start()
 
 	# def home(self, target='Home'):
 	#     logging.info('goto home')
@@ -287,21 +342,25 @@ class RokuCtrl(Roku, Ir):
 
 	def get_hdmirx_info(self, **kwargs):
 		logging.info(f'hdmirx for expect : {kwargs}')
+
 		def match(info):
 			res = re.findall(
 				r'Hactive|Vactive|Color Depth|Frame Rate|TMDS clock|HDR EOTF|Dolby Vision|HDCP Debug Value|HDCP14 state|HDCP22 state|Color Space',
 				info)
 			if res:
 				return res
-		for _ in range(10):
+
+		for _ in range(3):
 			try:
-				self.ser.write('cat /sys/class/hdmirx/hdmirx0/info')
-				info = self.ser.recv()
+				info = pytest.executer.checkoutput('cat /sys/class/hdmirx/hdmirx0/info')
+			# info = pytest.executer.checkoutput('dmesg')
+			# pytest.executer.checkoutput('dmesg -c')
 			except Exception:
-				...
+				info = ''
 			if 'HDCP1.4 secure' in info:
 				break
-			time.sleep(1)
+			time.sleep(2)
+
 		logging.info(info)
 		info = [i.strip() for i in info.split('\n') if match(i)]
 		logging.info(' ,'.join(info[:5]))

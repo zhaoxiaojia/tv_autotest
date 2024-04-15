@@ -14,14 +14,14 @@ import time
 class TestResult:
     def __init__(self, logDir):
         self.logDir = logDir
-        if not hasattr(self, 'logFile'):
-            self.log_file = os.path.join(self.logDir,
-                                         'Kpi' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv')
-        with open(self.log_file, 'a', encoding='utf-8') as f:
-            title = 'TestCase Min Max Avg'
-            logging.info(title.split())
-            f.write(','.join(title.split()))
-            f.write('\n')
+        # if not hasattr(self, 'logFile'):
+        #     self.log_file = os.path.join(self.logDir,
+        #                                  'Kpi' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv')
+        # with open(self.log_file, 'a', encoding='utf-8') as f:
+        #     title = 'TestCase Min Max Avg'
+        #     logging.info(title.split())
+        #     f.write(','.join(title.split()))
+        #     f.write('\n')
 
     def write_data(self, data: dict):
         logging.info('statisticis in progress')

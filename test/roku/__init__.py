@@ -5,6 +5,7 @@
 # @File    : __init__.py.py
 # @Project : kpi_test
 # @Software: PyCharm
+
 import logging
 import os
 
@@ -12,23 +13,22 @@ from dut_control.roku_ctrl import RokuCtrl
 from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.pil_tool import PilTool
 from tool.yaml_tool import YamlTool
+from tool.signal_generator.master_8100s import Master_8100s
 
 odm = 'changhong'
-mode_list = ['EcoSave', 'Vivid', 'Sports', 'Movie', 'Normal']
+mode_list = ['Low power', 'Vivid', 'Sports', 'Movie', 'Standard']
 size_list = ['Direct', 'Normal', 'Stretch', 'Zoom', 'Auto']
 
-skip_mode = True
-skip_size = True
+skip_mode = False
+skip_size = False
 no_such_timming = True
 
 roku_lux = YamlTool(os.getcwd() + f'/config/roku/roku_{odm}.yaml')
 roku_env = YamlTool(os.getcwd() + '/config/roku/config.yaml')
 
 hdmi = 'hdmi1'
-if roku_env.get_note('pattern_generator') == 'master_8100s':
-	from tool.signal_generator.master_8100s import Master_8100s
-
-	pattern_gener = Master_8100s()
+if roku_env.get_note('pytest.pattern_generator') == 'master_8100s':
+	...
 
 roku_ctl = RokuCtrl()
 # roku_ctl.ser.write('\x1A')

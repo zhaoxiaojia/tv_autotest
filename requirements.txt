@@ -1,6 +1,6 @@
 pyyaml
-pytest
-pytest-html
+pytest==7.4.0
+pytest-html==3.2.0
 pytest-loop
 pytest-repeat
 pyserial
@@ -9,3 +9,4 @@ uiautomator2
 uiautomator
 roku
 selenium
+allure-pytest
