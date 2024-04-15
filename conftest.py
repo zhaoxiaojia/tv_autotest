@@ -71,7 +71,6 @@ def pytest_addoption(parser):
 		"--resultpath", action="store", default=None, help="Test result path"
 	)
 
-
 # @pytest.fixture()
 # def resultpath(request):
 # 	logging.info(f'resultpath {time.asctime()}')
@@ -79,12 +78,12 @@ def pytest_addoption(parser):
 # 	return pytest.resultpath_timestamp
 
 
-@pytest.fixture(autouse=True)
-def setup():
-
-	pytest.kpi_result = 0
-	yield
-	time.sleep(10)
+# @pytest.fixture(autouse=True)
+# def setup():
+#
+# 	pytest.kpi_result = 0
+# 	yield
+# 	time.sleep(10)
 
 
 # def pytest_sessionfinish(session):

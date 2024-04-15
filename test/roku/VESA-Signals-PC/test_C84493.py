@@ -8,7 +8,6 @@
 # @Software   : PyCharm
 """
 
-
 import logging
 import time
 from test.roku import *
@@ -27,10 +26,11 @@ frame_rate = [6900, 7101]
 
 target_pic = os.getcwd() + f'/tool/signal_generator/pattern/target_{pattern_num}.jpg'
 
+
 @pytest.fixture(autouse=True, scope='module')
 def setup_teardown():
 	# roku_ctl.ser.start_catch_kernellog()
-	roku_ctl.switch_ir('off')
+
 	# timing_num = pytest.pattern_gener.getTimming(input='hdmi',resolution='720x480', scan_type='interlace')
 	logging.info(f'timing_num {Master_8100s.get_mspg_info(timing_num)}')
 	pytest.pattern_gener.setTimmingPattern(timing_num, pattern_num)
@@ -40,9 +40,9 @@ def setup_teardown():
 	time.sleep(15)
 	yield
 	# roku_ctl.ser.stop_catch_kernellog()
-	roku_ctl.switch_ir('on')
-	pytest.pattern_gener.close()
 	roku_ctl.home()
+
+	pytest.pattern_gener.close()
 
 
 @pytest.fixture(scope='module', params=mode_list)
@@ -62,7 +62,7 @@ def test_hdmirx_info():
 	                                frame=frame_rate), "Hdmirx info not in expect"
 
 
-@pytest.mark.skipif(skip_mode,reason='for debug')
+@pytest.mark.skipif(skip_mode, reason='for debug')
 def test_720x400_70_mode(set_picture_mode):
 	test_pic = pytest.testResult.logDir + '/' + f'test_{roku_ctl.ptc_mode}_{pattern_num}_{timing_num}.jpeg'
 	diff_pic = pytest.testResult.logDir + '/' + f'diff_{roku_ctl.ptc_mode}_{pattern_num}_{timing_num}.jpeg'
@@ -74,8 +74,7 @@ def test_720x400_70_mode(set_picture_mode):
 	pil.compare_images(test_pic, target_pic, diff_pic)
 
 
-
-@pytest.mark.skipif(skip_size,reason='for debug')
+@pytest.mark.skipif(skip_size, reason='for debug')
 def test_720x400_70_size(set_picture_size):
 	test_pic = pytest.testResult.logDir + '/' + f'test_{roku_ctl.ptc_size}_{pattern_num}_{timing_num}.jpeg'
 	diff_pic = pytest.testResult.logDir + '/' + f'diff_{roku_ctl.ptc_size}_{pattern_num}_{timing_num}.jpeg'
@@ -85,4 +84,3 @@ def test_720x400_70_size(set_picture_size):
 	if pytest.light_sensor:
 		pytest.light_sensor.count_kpi(0, roku_lux.get_note(f'color_bar')['Normal']), 'Not in expect'
 	pil.compare_images(test_pic, target_pic, diff_pic)
-

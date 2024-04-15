@@ -39,6 +39,7 @@ class TelnetTool(Executer):
 			logging.info(f)
 
 	def execute_cmd(self, cmd):
+		print(f'execute cmd{cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		time.sleep(1)
 
@@ -50,7 +51,7 @@ class TelnetTool(Executer):
 		#         f.write(res)
 		if not wildcard:
 			wildcard = self.wildcard
-
+		print(f'type cmd  {cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		try:
 			res = self.tn.read_until(wildcard).decode('utf-8')
@@ -93,17 +94,21 @@ class TelnetTool(Executer):
 
 
 # tl = TelnetTool('192.168.50.109', 'sandia')
-# info = tl.checkoutput('telnet 192.168.50.109 8080',wildcard=b'onn. Roku TV')
+# info = tl.checkoutput('telnet 192.168.50.109 8080', wildcard=b'onn. Roku TV')
+# print(info)
+# info = tl.checkoutput('logcast start', wildcard=b'Start logcasting')
 # print(info)
 # time.sleep(2)
-# info = tl.checkoutput('\x1A')
-# print(info)
-# time.sleep(5)
+# tl.execute_cmd('\x03')  # ,wildcard=b'Console')
+# time.sleep(2)
+# tl.execute_cmd('\x1A')
+# time.sleep(2)
 # tl.execute_cmd('telnet 192.168.50.109 8070')
 # while True:
 # 	info = tl.tn.read_very_eager()
 # 	if info != b'':
-# 		with open('kernel.log','a') as f:
+# 		print(info)
+# 		with open('kernel.log', 'a') as f:
 # 			f.write(info.decode('utf-8').strip())
 
 # tl.tn.close()

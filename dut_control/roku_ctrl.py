@@ -119,6 +119,7 @@ class RokuCtrl(Roku, Ir):
 		self.ser = SerialCtrl(roku_ser['path'], roku_ser['baud'])
 		self.ptc_size, self.ptc_mode = '', ''
 		self.get_kernel_log()
+		self.switch_ir('off')
 
 	def __getattr__(self, name):
 		if name not in COMMANDS and name not in SENSORS:
@@ -170,6 +171,7 @@ class RokuCtrl(Roku, Ir):
 		else:
 			return ''
 
+	@classmethod
 	def switch_ir(self, status):
 		ir_command = {
 			'on': 'echo 0xD > /sys/class/remote/amremote/protocol',
@@ -265,8 +267,12 @@ class RokuCtrl(Roku, Ir):
 			tl = TelnetTool(self.ip, 'sandia')
 			info = tl.checkoutput(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
 			# logging.info(info)
+			tl.execute_cmd('logcast start')
 			time.sleep(2)
-			tl.checkoutput('\x1A')
+			tl.execute_cmd('\x03')  # ,wildcard=b'Console')
+			time.sleep(2)
+			tl.execute_cmd('\x1A')
+			time.sleep(2)
 			tl.execute_cmd(f'telnet {self.ip} 8070')
 			while True:
 				info = tl.tn.read_very_eager()

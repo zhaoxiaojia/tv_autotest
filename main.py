@@ -14,11 +14,13 @@ import ast
 import pytest
 import datetime
 import shutil
+import logging
+from dut_control.roku_ctrl import RokuCtrl
 
 timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 # 参数为需要运行的测试用例 可以是文件或者文件夹目录
 # test_case = 'test/roku/CEA-861/test_C84431.py'
-test_case = r'test/roku/VESA-Signals-PC'
+test_case = r'test/roku/VESA-Signals-PC/test_C84492.py'
 
 allure_parent_path = test_case.replace('test', 'report')
 if os.path.isdir(test_case):
@@ -71,13 +73,14 @@ def update_file():
 
 if __name__ == '__main__':
 
-	if allure_cmd:
-		cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
-	else:
-		cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
-
+	# if allure_cmd:
+	# 	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
+	# else:
+	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
+	allure_cmd = False
 	pytest.main(cmd)
 
+	RokuCtrl.switch_ir('on')
 	if not os.path.exists('report'):
 		os.mkdir('report')
 	if allure_cmd:

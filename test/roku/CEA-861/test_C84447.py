@@ -31,7 +31,7 @@ target_pic = os.getcwd() + f'/tool/signal_generator/pattern/target_{pattern_num}
 @pytest.fixture(autouse=True, scope='session')
 def setup_teardown():
 	# roku_ctl.ser.start_catch_kernellog()
-	roku_ctl.switch_ir('off')
+	 
 	# timing_num = pytest.pattern_gener.getTimming(input='hdmi',resolution='720x480', scan_type='interlace')
 	logging.info(f'timing_num {Master_8100s.get_mspg_info(timing_num)}')
 	pytest.pattern_gener.setTimmingPattern(timing_num, pattern_num)
@@ -42,9 +42,10 @@ def setup_teardown():
 
 	yield
 	# roku_ctl.ser.stop_catch_kernellog()
-	roku_ctl.switch_ir('on')
-	pytest.pattern_gener.close()
 	roku_ctl.home()
+	  
+	pytest.pattern_gener.close()
+
 
 
 @pytest.fixture(scope='module', params=mode_list)

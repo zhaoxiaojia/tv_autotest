@@ -19,8 +19,8 @@ odm = 'changhong'
 mode_list = ['Low power', 'Vivid', 'Sports', 'Movie', 'Standard']
 size_list = ['Direct', 'Normal', 'Stretch', 'Zoom', 'Auto']
 
-skip_mode = False
-skip_size = False
+skip_mode = True
+skip_size = True
 no_such_timming = True
 
 roku_lux = YamlTool(os.getcwd() + f'/config/roku/roku_{odm}.yaml')
