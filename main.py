@@ -20,13 +20,14 @@ from dut_control.roku_ctrl import RokuCtrl
 timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 # 参数为需要运行的测试用例 可以是文件或者文件夹目录
 # test_case = 'test/roku/CEA-861/test_C84431.py'
-test_case = r'test/roku/VESA-Signals-PC/test_C84492.py'
+test_case = r'test/roku/VESA-Signals-PC'
 
 allure_parent_path = test_case.replace('test', 'report')
-if os.path.isdir(test_case):
-	allure_cmd = f'--alluredir=./results/allure/{test_case.split("test/")[1]}'
-else:
-	allure_cmd = ''
+
+# if os.path.isdir(test_case):
+# 	allure_cmd = f'--alluredir=./results/allure/{test_case.split("test/")[1]}'
+# else:
+# 	allure_cmd = ''
 # ./report/roku/VESA-Signals-PC/2024.04.11_16.28.56
 allure_path = fr'./report/{test_case.split("test/")[1]}/{timestamp}'
 allure_history_file = ''
@@ -76,24 +77,25 @@ if __name__ == '__main__':
 	# if allure_cmd:
 	# 	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
 	# else:
-	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
-	allure_cmd = False
+	# 	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
+	allure_cmd = f'--alluredir=./results/allure/{test_case.split("test/")[1]}'
+	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
 	pytest.main(cmd)
 
 	RokuCtrl.switch_ir('on')
 	if not os.path.exists('report'):
 		os.mkdir('report')
-	if allure_cmd:
-		subprocess.check_output(f'allure generate -c {allure_cmd.split("./")[1]} -o {allure_path}', shell=True)
+	if not os.path.exists('results'):
+		os.mkdir('results')
 
-		allure_history_file = os.listdir(allure_parent_path)
-		get_dir()
-		update_file()
+	# if allure_cmd:
+	subprocess.check_output(f'allure generate -c {allure_cmd.split("./")[1]} -o {allure_path}', shell=True)
 
-		shutil.move("kernel.log", allure_path)
-		shutil.move("report.html", allure_path)
-		shutil.move("pytest.log", allure_path)
-	else:
-		shutil.move("kernel.log", os.path.join(os.getcwd(), 'results/' + timestamp))
-		shutil.move("report.html", os.path.join(os.getcwd(), 'results/' + timestamp))
-		shutil.move("pytest.log", os.path.join(os.getcwd(), 'results/' + timestamp))
+	# allure_history_file = os.listdir(allure_parent_path)
+	# get_dir()
+	# update_file()
+
+	shutil.move("kernel.log", allure_path)
+	shutil.move("report.html", allure_path)
+	shutil.move("pytest.log", allure_path)
+	shutil.move("dmesg.log", allure_path)

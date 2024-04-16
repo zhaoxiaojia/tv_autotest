@@ -8,7 +8,7 @@
 
 import logging
 import os
-
+import pytest
 from dut_control.roku_ctrl import RokuCtrl
 from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.pil_tool import PilTool
@@ -31,6 +31,8 @@ if roku_env.get_note('pytest.pattern_generator') == 'master_8100s':
 	...
 
 roku_ctl = RokuCtrl()
+pytest.executer.checkoutput('echo 6 > /proc/sys/kernel/printk')
+pytest.executer.checkoutput('echo log_level 0x2b > /sys/class/hdmirx/hdmirx0/param')
 # roku_ctl.ser.write('\x1A')
 # roku_ctl.ser.write('bg')
 pil = PilTool()

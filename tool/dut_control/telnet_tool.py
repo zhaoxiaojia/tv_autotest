@@ -39,7 +39,6 @@ class TelnetTool(Executer):
 			logging.info(f)
 
 	def execute_cmd(self, cmd):
-		print(f'execute cmd{cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		time.sleep(1)
 
@@ -51,7 +50,7 @@ class TelnetTool(Executer):
 		#         f.write(res)
 		if not wildcard:
 			wildcard = self.wildcard
-		print(f'type cmd  {cmd}')
+		logging.info(f'telnet type cmd : {cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		try:
 			res = self.tn.read_until(wildcard).decode('utf-8')
@@ -94,7 +93,9 @@ class TelnetTool(Executer):
 
 
 # tl = TelnetTool('192.168.50.109', 'sandia')
-# info = tl.checkoutput('telnet 192.168.50.109 8080', wildcard=b'onn. Roku TV')
+# # info = tl.checkoutput('telnet 192.168.50.109 8080', wildcard=b'onn. Roku TV')
+# info = tl.checkoutput('dmesg')
+# print(info)
 # print(info)
 # info = tl.checkoutput('logcast start', wildcard=b'Start logcasting')
 # print(info)

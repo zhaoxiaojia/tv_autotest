@@ -10,3 +10,4 @@ uiautomator
 roku
 selenium
 allure-pytest
+Phidget22

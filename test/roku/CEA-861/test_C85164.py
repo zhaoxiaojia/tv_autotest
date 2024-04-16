@@ -41,7 +41,7 @@ def setup_teardown():
 	yield
 	# roku_ctl.ser.stop_catch_kernellog()
 	roku_ctl.home()
-	  
+	roku_ctl.get_dmesg_log()
 	pytest.pattern_gener.close()
 
 

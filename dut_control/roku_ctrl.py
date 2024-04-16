@@ -116,7 +116,7 @@ class RokuCtrl(Roku, Ir):
 		}
 		self.ip = roku_ip
 		self.roku = Roku(roku_ip)
-		self.ser = SerialCtrl(roku_ser['path'], roku_ser['baud'])
+		# self.ser = SerialCtrl(roku_ser['path'], roku_ser['baud'])
 		self.ptc_size, self.ptc_mode = '', ''
 		self.get_kernel_log()
 		self.switch_ir('off')
@@ -260,6 +260,12 @@ class RokuCtrl(Roku, Ir):
 			self.back(time=1)
 			self.back(time=1)
 			self.back(time=1)
+
+	def get_dmesg_log(self):
+		with open('dmesg.log','a') as f:
+			info = pytest.executer.checkoutput('dmesg')
+			f.write(info)
+		pytest.executer.checkoutput('dmesg -c')
 
 	def get_kernel_log(self):
 		def run_logcast():
