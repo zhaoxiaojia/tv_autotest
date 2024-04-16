@@ -29,7 +29,8 @@ allure_parent_path = test_case.replace('test', 'report')
 # else:
 # 	allure_cmd = ''
 # ./report/roku/VESA-Signals-PC/2024.04.11_16.28.56
-allure_path = fr'./report/{test_case.split("test/")[1]}/{timestamp}'
+# allure_path = fr'./report/{test_case.split("test/")[1]}/{timestamp}'
+allure_path = fr'./report/{timestamp}'
 allure_history_file = ''
 
 
@@ -74,23 +75,16 @@ def update_file():
 
 if __name__ == '__main__':
 
-	# if allure_cmd:
-	# 	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
-	# else:
-	# 	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
-	allure_cmd = f'--alluredir=./results/allure/{test_case.split("test/")[1]}'
-	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
+	allure_cmd = f'--alluredir=./allure'
+	# cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
+	cmd = ['-v', '--capture=sys', '--html=report.html', test_case, allure_cmd]
 	pytest.main(cmd)
 
 	RokuCtrl.switch_ir('on')
 	if not os.path.exists('report'):
 		os.mkdir('report')
-	if not os.path.exists('results'):
-		os.mkdir('results')
-
 	# if allure_cmd:
-	subprocess.check_output(f'allure generate -c {allure_cmd.split("./")[1]} -o {allure_path}', shell=True)
-
+	subprocess.check_output(f'allure generate -c ./allure -o {allure_path}', shell=True)
 	# allure_history_file = os.listdir(allure_parent_path)
 	# get_dir()
 	# update_file()
@@ -99,3 +93,5 @@ if __name__ == '__main__':
 	shutil.move("report.html", allure_path)
 	shutil.move("pytest.log", allure_path)
 	shutil.move("dmesg.log", allure_path)
+
+	os.system(f'allure serve ./allure')
