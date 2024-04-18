@@ -57,13 +57,14 @@ def pytest_sessionstart(session):
 		raise EnvironmentError("Not support connect type %s" % pytest.connect_type)
 
 	# create a folder based on the current time to save logs
-	# result_path = os.path.join(os.getcwd(), 'results/' + session.config.getoption("--resultpath"))
-	# os.mkdir(result_path)
-	# pytest.testResult = TestResult(result_path)
-	# pytest.result_data = collections.defaultdict(list)
-	# create test results if not exist
-	# if not os.path.exists('results'):
-	# 	os.mkdir('results')
+	result_path = os.getcwd() + '/report/' + session.config.getoption("--resultpath")
+	pytest.testResult = TestResult(result_path.replace('\\','/'))
+
+
+# pytest.result_data = collections.defaultdict(list)
+# create test results if not exist
+# if not os.path.exists('results'):
+# 	os.mkdir('results')
 
 
 def pytest_addoption(parser):

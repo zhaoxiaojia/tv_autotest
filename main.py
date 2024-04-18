@@ -20,7 +20,7 @@ from dut_control.roku_ctrl import RokuCtrl
 timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 # 参数为需要运行的测试用例 可以是文件或者文件夹目录
 # test_case = 'test/roku/CEA-861/test_C84431.py'
-test_case = r'test/roku/VESA-Signals-PC'
+test_case = r'test/roku/CEA-861'
 
 allure_parent_path = test_case.replace('test', 'report')
 
@@ -75,16 +75,23 @@ def update_file():
 
 if __name__ == '__main__':
 
-	allure_cmd = f'--alluredir=./allure'
+	if not os.path.exists('report'):
+		os.mkdir('report')
+	if os.path.exists('allure'):
+		shutil.rmtree('allure')
+	if not os.path.exists(allure_path):
+		os.mkdir(allure_path)
+
+	# allure_cmd = f'--alluredir=./allure'
+	# tm_cmd = f'--pytest-tmreport-name=report.html'
 	# cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
-	cmd = ['-v', '--capture=sys', '--html=report.html', test_case, allure_cmd]
+	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
 	pytest.main(cmd)
 
 	RokuCtrl.switch_ir('on')
-	if not os.path.exists('report'):
-		os.mkdir('report')
+
 	# if allure_cmd:
-	subprocess.check_output(f'allure generate -c ./allure -o {allure_path}', shell=True)
+	# subprocess.check_output(f'allure generate -c ./allure -o {allure_path}', shell=True)
 	# allure_history_file = os.listdir(allure_parent_path)
 	# get_dir()
 	# update_file()
@@ -94,4 +101,4 @@ if __name__ == '__main__':
 	shutil.move("pytest.log", allure_path)
 	shutil.move("dmesg.log", allure_path)
 
-	os.system(f'allure serve ./allure')
+# os.system(f'allure serve ./allure')
