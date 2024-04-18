@@ -83,9 +83,9 @@ if __name__ == '__main__':
 		os.mkdir(allure_path)
 
 	# allure_cmd = f'--alluredir=./allure'
-	# tm_cmd = f'--pytest-tmreport-name=report.html'
+	tm_cmd = f'--pytest-tmreport-name=report.html'
 	# cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
-	cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case]
+	cmd = ['-v', '--capture=sys', tm_cmd, f'--resultpath={timestamp}', test_case]
 	pytest.main(cmd)
 
 	RokuCtrl.switch_ir('on')
@@ -101,4 +101,4 @@ if __name__ == '__main__':
 	shutil.move("pytest.log", allure_path)
 	shutil.move("dmesg.log", allure_path)
 
-# os.system(f'allure serve ./allure')
+	# os.system(f'allure serve ./allure')
