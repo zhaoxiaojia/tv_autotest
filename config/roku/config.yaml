@@ -1,8 +1,3 @@
 # 待测产品 ip
 dut_ip: 192.168.50.109
 
-# 待测产品串口信息
-dut_serial:
-  path: COM8
-  baud: 115200
-

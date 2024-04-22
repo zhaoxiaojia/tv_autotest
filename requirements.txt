@@ -11,3 +11,4 @@ roku
 selenium
 allure-pytest
 Phidget22
+pytest-tmreport

@@ -67,9 +67,9 @@ COMMANDS = {
 SENSORS = ("acceleration", "magnetic", "orientation", "rotation")
 
 roku_lux = YamlTool(os.getcwd() + '/config/roku/roku_changhong.yaml')
-roku_config = YamlTool(os.getcwd() + '/config/roku/config.yaml')
-roku_ip = roku_config.get_note('dut_ip')
-roku_ser = roku_config.get_note('dut_serial')
+roku_config = YamlTool(os.getcwd() + '/config/config.yaml')
+roku_ip = roku_config.get_note("connect_type")['telnet']['ip']
+# roku_ser = roku_config.get_note('dut_serial')
 
 lock = threading.Lock()
 

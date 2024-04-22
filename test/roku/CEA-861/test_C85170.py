@@ -15,7 +15,7 @@ from test.roku import *
 import pytest
 
 pattern_num = '033'
-timing_num = '464'
+timing_num = '476'
 
 # hdmirx info 预期值
 hative = '4096'

@@ -8,8 +8,11 @@
 
 
 
-for _ in range(3):
-	print('coco is handsome')
-	break
-else:
-	raise UnicodeError('fxxk')
+a = []
+i = 0
+for i in range(10):
+	a[i] = i+100
+
+print(i)
+for j in range(10):
+	print(j,a[i])
