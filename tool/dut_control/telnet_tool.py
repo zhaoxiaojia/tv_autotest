@@ -19,7 +19,10 @@ from threading import Thread
 from tool.dut_control.executer import Executer
 
 cmd_line_wildcard = {
-	'sandia': b'sandia:/ #'
+	'sandia': b'sandia:/ #',
+	'sandia_latam': b'sandia_isdb:/ #',
+	'sandia_hkc': b'sandia manu:/ #',
+	'sandia_dvb': b'sandia_dvb:/ #'
 }
 
 
@@ -27,11 +30,11 @@ class TelnetTool(Executer):
 	def __init__(self, ip, wildcard):
 		super().__init__()
 		self.ip = ip
+		self.wildcard = cmd_line_wildcard[wildcard]
 		try:
 			logging.info(f'Try to connect {ip}')
 			self.tn = telnetlib.Telnet()
 			self.tn.open(self.ip, port=23)
-			self.wildcard = cmd_line_wildcard[wildcard]
 			self.tn.read_until(self.wildcard).decode('utf-8')
 			logging.info('telnet init done')
 		# print('telnet init done')
@@ -53,23 +56,10 @@ class TelnetTool(Executer):
 		logging.info(f'telnet type cmd : {cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		try:
-			res = self.tn.read_until(wildcard).decode('utf-8')
+			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
 		except Exception as e:
 			self.tn.open(self.ip)
-			res = self.tn.read_until(wildcard).decode('utf-8')
-		# if re.findall(r'iperf[3]?.*?-s', cmd):
-		#     cmd += '&'
-		# logging.info(f'telnet command {cmd}')
-
-		# if re.findall(r'iperf[3]?.*?-s', cmd):
-		#     logging.info('run thread')
-		#     t = Thread(target=run_iperf)
-		#     t.daemon = True
-		#     t.start()
-		# else:
-		#     self.tn.write(cmd.encode('ascii') + b'\n')
-		#     res = self.tn.read_until(self.wildcard).decode('gbk')
-		# res = self.tn.read_very_eager().decode('gbk')
+			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
 		time.sleep(1)
 		return res.strip()
 
@@ -92,7 +82,13 @@ class TelnetTool(Executer):
 		return 'mcs_rx'
 
 
-# tl = TelnetTool('192.168.50.109', 'sandia')
+tl = TelnetTool('192.168.50.109', 'sandia')
+info = tl.checkoutput('cat /sys/class/v4ldec/status')
+print(info)
+# while True:
+# 	info = tl.tn.read_very_eager()
+# 	if info != b'':
+# 		print(info)
 # # info = tl.checkoutput('telnet 192.168.50.109 8080', wildcard=b'onn. Roku TV')
 # info = tl.checkoutput('dmesg')
 # print(info)

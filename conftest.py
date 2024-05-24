@@ -10,6 +10,7 @@
 
 
 '''
+
 import collections
 import datetime
 import logging
@@ -78,13 +79,6 @@ def pytest_addoption(parser):
 # 	pytest.resultpath_timestamp = request.config.getoption("--resultpath")
 # 	return pytest.resultpath_timestamp
 
-
-# @pytest.fixture(autouse=True)
-# def setup():
-#
-# 	pytest.kpi_result = 0
-# 	yield
-# 	time.sleep(10)
 
 
 # def pytest_sessionfinish(session):

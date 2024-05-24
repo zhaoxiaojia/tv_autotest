@@ -1,0 +1,27 @@
+<StandardGridItemComponent children="5" extends="Group" focusable="true"
+                           rcid="0" bounds="{0, 0, 243.55556, 137}"
+                           index="0" focused="true">
+    <Rectangle name="posterRect" rcid="0" bounds="{0, 0, 243.55556, 137}"
+               color="#97979719" index="0"/>
+    <Poster name="poster" rcid="0" bounds="{0, 0, 243.55556, 137}"
+            uri="pkg:/locale/default/images/poster_video_fhd.png"
+            loadStatus="3" index="0"/>
+    <Rectangle name="labelsBackground" rcid="0" translation="{0, 96}"
+               bounds="{0, 96, 244.55556, 41}" color="#00000080" index="1"/>
+    <LayoutGroup children="2" name="labelsLayout" rcid="0"
+                 translation="{5, 137}" bounds="{5, 106, 233, 31}"
+                 index="0">
+        <Label name="line1" rcid="0" translation="{-0, -31}"
+               bounds="{0, -31, 233, 26}" text="MKV-VP9-2K-AAC"
+               color="#c0c0c0ff" index="0"/>
+        <Label name="line2" rcid="0" visible="false" scale="{0, 0}" text=""
+               color="#c0c0c0ff" index="1"/>
+    </LayoutGroup>
+    <DurationBar children="2" extends="Group" name="durationBar" rcid="0"
+                 visible="false" translation="{0, 131}" scale="{0, 0}"
+                 index="0">
+        <Rectangle name="background" rcid="0" bounds="{0, 0, 243.55556, 6}"
+                   color="#000000ff" index="0"/>
+        <Rectangle name="progress" rcid="0" color="#ad0e34ff" index="1"/>
+    </DurationBar>
+</StandardGridItemComponent>

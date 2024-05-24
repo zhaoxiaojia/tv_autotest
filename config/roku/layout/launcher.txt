@@ -1,0 +1,10 @@
+Home,
+Live TV,
+What to Watch,
+Featured Free,
+Sports,
+Search,
+Streaming Store,
+Settings,
+Secret Screens,
+Debug

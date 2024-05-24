@@ -12,9 +12,9 @@ import logging
 import pytest
 from tool.yaml_tool import YamlTool
 import os
-from tool.phidgets_sensor.light_sensor import lightSensor
-from tool.pdusnmp import PowerCtrl
-from tool.signal_generator.master_8100s import Master_8100s
+
+
+
 
 
 class ThirdPartyEqupment:
@@ -25,14 +25,17 @@ class ThirdPartyEqupment:
 		pytest.pattern_gener = ''
 		# init lightsensor
 		if self.get_status('light_sensor'):
+			from tool.phidgets_sensor.light_sensor import lightSensor
 			pytest.light_sensor = lightSensor()
 
 		# init power crt
 		if self.get_status('power_crt'):
+			from tool.pdusnmp import PowerCtrl
 			pytest.power_crt = PowerCtrl(pytest.config_yaml.get_note("power_crt")['ip'])
 
 		# init
 		if self.get_status('pattern_generator'):
+			from tool.signal_generator.master_8100s import Master_8100s
 			pytest.pattern_gener = Master_8100s()
 
 	def get_status(self, device_name):

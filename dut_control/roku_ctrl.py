@@ -23,6 +23,7 @@ from dut_control.ir import Ir
 from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.yaml_tool import YamlTool
 from tool.dut_control.telnet_tool import TelnetTool
+from xml.etree import ElementTree as ET
 
 COMMANDS = {
 	# Standard Keys
@@ -84,14 +85,58 @@ def decode_ignore(info):
 
 
 class RokuCtrl(Roku, Ir):
-	# PTC_SIZE = {
-	# 	'Auto': 0,
-	# 	'Direct': 1,
-	# 	'Normal': 2,
-	# 	'Stretch': 3,
-	# 	'Zoom': 4
-	# }
 	_instance = None
+	VIDEO_STATUS_TAG = [
+		r'screen size \d+x\d+',  # pal层设置video参数时会调用到set property,给vsink设置下来，包括是否是2k/screen size等
+		# r'set source window rect',  # 设置视频窗口的位置和宽高
+		# r'v4l_get_capture_port_formats: Found \d+ capture formats',  # 获得解码器可支持的codec类型
+		# r'avsync session \d+',  # pal层设置video参数时会调用到set property，给asink设置下来，包括是否等待video以及等待时间等
+		r'ready to paused',  # 切换状态为pause
+		r'output port requires \d+ buffers',  # 申请outputbuffer用于存放es数据
+		r'starting video thread',  # video第一帧送入，开始解码线程
+		r'detected audio sink GstAmlHalAsink',  # 检测是否有audio element
+		r'handle_v4l_event: event.type:\d+, event.u.src_change.changes:\d+',
+		# 收到decoder发送的解出第一笔,resolution change 的signal
+		r'v4l_setup_capture_port: capture port requires \d+ buffers',  # 申请buffer用于存放解码后的yuv数据
+		r'video_decode_thread:<video_sink> emit first frame signal ts \d+',  # decoder解出第一帧，向pal层发送first frame的signal
+		r'display_engine_show: push frame: \d+',  # push_frame就是decoder解出的yuv数据
+		# r'gst_aml_hal_asink_pad_event:<audio_sink> done',  # audio 数据流开始start
+		# r'gst_aml_vsink_change_state:<video_sink> paused to playing avsync_paused \d+',
+		# rokuo收到video start,就会下发setspeed1，pipeline状态切换为playing，正式起播
+		# r'gst_aml_hal_asink_change_state:<audio_sink> paused to playing',
+		r'display_thread_func: pop frame: \d+',
+		r'gst_aml_hal_asink_event:<audio_sink> receive eos',
+		r'video_eos_thread:<video_sink> Posting EOS',
+		r'gst_aml_hal_asink_change_state:<audio_sink> ready to null',
+		r'gst_aml_vsink_change_state:<video_sink> ready to null'
+	]
+
+	AML_SINK_ERROR_TAG = re.compile(r'gst_caps_new_empty failed|gst_pad_template_new failed|'
+	                                r'dec ope fail|can not get formats|can not build caps|invalid dw mode \d+|'
+	                                r'Bad screen properties string|Bad source window properties string|'
+	                                r'Bad window properties string|not accepting format\(\w+\)|'
+	                                r'no memory for codec data size \d+|gst_buffer_map failed for codec data|'
+	                                r'fail to create thread|V4L2_DEC_CMD_STOP output fail \d+|'
+	                                r'postErrorMessage: code \d+ \(\w+\)|meta data is invalid|'
+	                                r'Get mate head error|Metadata oversize \d+ > \d+, please check|'
+	                                r'VIDIOC_G_FMT error \d+|cap VIDIOC_STREAMOFF error \d+|'
+	                                r'v4l_dec_config failed|fail to get visible dimension \d+|'
+	                                r'fail to get cropcap \d+|setup capture fail|streamon failed for output: rc \d+ errno \d+|'
+	                                r'fail VIDIOC_DQEVENT \d+|VIDIOC_G_PARM error \d+ rc \d+|'
+	                                r'cap VIDIOC_DQBUF fail \d+|start avsync error|VIDIOC_STREAMOFF fail ret:\d+|'
+	                                r'set secure mode fail|v4l_dec_dw_config failed|set output format \w+ fail|'
+	                                r'setup output fail|can not get output buffer \d+|queuing output buffer failed: rc \d+ errno \d+|'
+	                                r'start_video_thread failed|dec open fail|uvm open fail|get capture format fail|'
+	                                r'reg event fail|start render fail|invalid para \d+ \d+|free index \d+ fail|'
+	                                r'queue cb fail \d+|unable to open file \w+|unable to get pts from: \w+|'
+	                                r'fail to open \w+|fail to write \w+ to \w+|set volume fail \d+|stream mute fail:\d+|'
+	                                r'invalid sync mode \d+|invalid value:\w+|can not get string|wrong ac4_lang:\w+|'
+	                                r'wrong ac4_lang2:\w+|wrong ass type \w+|rate \d+.?\d+ fail|no stream opened|'
+	                                r'create av sync fail|segment event not received yet|create timer fail|create thread fail|'
+	                                r'out buffer fail \d+|wrong size \d+/\d+|asink open failure|fail to load hw:\d+|'
+	                                r'OOM|unsupported channel number:\d+|invalid port:\d+|can not open output stream:\d+|'
+	                                r'pause failure:\d+|parse ac4 fail|frame too big \d+|header too big \d+|'
+	                                r'trans mode write fail \d+/\d+|drop data \d+/\d+|null pointer')
 
 	def __new__(cls, *args, **kw):
 		if cls._instance is None:
@@ -100,26 +145,15 @@ class RokuCtrl(Roku, Ir):
 
 	def __init__(self):
 		super(RokuCtrl, self).__init__(roku_ip)
-		self.settings = ['Network', 'Accessibility', 'TV picture settings', 'TV inputs', 'Audio', 'Guest Mode',
-		                 'Home screen', 'Payment method', 'Apple AirPlay and HomeKit', 'Legal notices', 'Privacy',
-		                 'Help', 'System']
-		self.launcher = ['Home', 'Live TV', 'What to Watch', 'Featured Free', 'Sports', 'Search',
-		                 'Streaming Store', 'Settings', 'Secret Screens', 'Debu293g']
-		self.hdmi_tv_setting = ['Sleep timer', 'Picture settings', 'Sound settings', 'Accessibility', 'Picture off']
-
-		self.source = {
-			'HDMI 1': 'hdmi1',
-			'HDMI 2': 'hdmi2',
-			'HDMI 3': 'hdmi3',
-			'AV': 'cvbs',
-			'Live TV': 'dtv',
-		}
 		self.ip = roku_ip
-		self.roku = Roku(roku_ip)
-		# self.ser = SerialCtrl(roku_ser['path'], roku_ser['baud'])
 		self.ptc_size, self.ptc_mode = '', ''
 		self.get_kernel_log()
 		self.switch_ir('off')
+		self.current_target_array = 'launcher'
+
+		# 用于记录当前 遥控光标所在 控件名称
+		self.ir_current_location = ''
+		logging.info('roku init done')
 
 	def __getattr__(self, name):
 		if name not in COMMANDS and name not in SENSORS:
@@ -160,16 +194,142 @@ class RokuCtrl(Roku, Ir):
 			handle.write(response)
 			handle.close()
 
-	def get_ir_focus(self):
+	def load_array(self, array_txt):
+		'''
+		从 layout/xxx.txt 中 解析出二维数组
+		Args:
+			array_txt:
+
+		Returns:
+
+		'''
+		with open(os.getcwd() + f'/config/roku/layout/{array_txt}') as f:
+			info = f.readlines()
+			arr = [i.strip().split(',') for i in info]
+		return arr
+
+	def get_ir_focus(self, filename='dumpsys.xml'):
+		'''
+		从roku 服务器获取当天tv 页面的空间xml
+		解析xml 获取 focused="true"
+		返回解析 得到的 列表中 最后一个元素
+		Returns:
+
+		'''
 		# http://192.168.0.121:8060/query/focus/secret
-		url = f'http://{self.ip}:8060/query/focus/secret'
-		r = requests.get(url)
-		result = re.findall(r'<text>(.*?)</text>', r.content.decode('utf-8'), re.S)
-		if result:
-			logging.info(f"Current ir focus {result[0]}")
-			return result[0]
+		# url = f'http://{self.ip}:8060/query/focus/secret'
+		# r = requests.get(url)
+		# result = re.findall(r'<text>(.*?)</text>', r.content.decode('utf-8'), re.S)
+		# if result:
+		# 	logging.info(f"Current ir focus {result[0]}")
+		# 	return result[0]
+		# else:
+		# 	return ''
+
+		self._get_screen_xml(filename)
+		tree = ET.parse(filename)
+		root = tree.getroot()
+
+		node_list = []
+		for child in root:
+			for child_1 in child.iter():
+				if child_1.tag == 'ItemDetailsView':
+					for child_2 in child_1.iter():
+						if child_2.tag == 'Label' and child_2.attrib['name'] == 'title':
+							logging.info(child_2.attrib['text'])
+							if child_2.attrib['text']:
+								self.ir_current_location = child_2.attrib['text']
+								return
+				if child_1.tag == 'StandardGridItemComponent':
+					if child_1.attrib.get('focused') and child_1.attrib['focused'] == 'true':
+						logging.info(child_1.attrib['text'])
+						node_list.append(child_1)
+		self.ir_current_location = node_list[-1].find('LayoutGroup').find('Label').attrib['text']
+
+	def get_ir_index(self, name, array):
+		'''
+
+		Args:
+			name: 需要查询的目标 名字
+			array: 需要查询的 二维数组
+
+		Returns:
+
+		'''
+		if type(array) == str:
+			target_array = self.load_array(self.current_target_array + '.txt')
 		else:
-			return ''
+			target_array = array
+		logging.info(f"Try to get index of  {name}")
+		for i in target_array:
+			for y in i:
+				if name == y:
+					logging.info(f'Get location : {target_array.index(i)}  {i.index(y)}')
+					return (target_array.index(i), i.index(y))
+		logging.warning("Can't find such this widget")
+		return None
+
+	def ir_navigation(self, target, array):
+		self.get_ir_focus()
+		current_index = self.get_ir_index(self.ir_current_location, array)
+		target_index = self.get_ir_index(target, array)
+		x_step = abs(target_index[0] - current_index[0])
+		y_step = abs(target_index[1] - current_index[1])
+		if x_step == 0 and y_step == 0:
+			return
+		if target_index[0] > current_index[0]:
+			self.down(time=1)
+		elif target_index[0] == current_index[0]:
+			if target_index[1] > current_index[1]:
+				self.right(time=1)
+			else:
+				self.left(time=1)
+		else:
+			self.up(time=1)
+		self.ir_navigation(target, array)
+
+	def ir_enter(self, target, array):
+		self.ir_navigation(self.get_ir_index(target, array))
+		self.select(0.5)
+
+	def _get_screen_xml(self, filename):
+		'''
+
+		Returns:
+
+		'''
+		url = f"http://{roku_ip}:8060/query/screen/secret"
+		r = requests.get(url).content.decode('utf-8')
+		with open(file='dumpsys.xml', mode='w') as handle:
+			handle.write(r)
+
+	def get_u_disk_file_distribution(self, filename='dumpsys.xml'):
+		'''
+		解析xml 获取u 盘内 folder 分布 以及 file 分布
+		Returns: 二维数组
+
+		'''
+		self._get_screen_xml(filename)
+		tree = ET.parse(filename)
+		root = tree.getroot()
+
+		node_list, temp = [], []
+		current_file = ''
+		for child in root:
+			for child_1 in child.iter():
+				# 解析StandardGridItemComponent element
+				if child_1.tag == 'StandardGridItemComponent':
+					index = int(child_1.attrib['index'])
+					for child_2 in child_1.iter():
+						if child_2.tag == 'Poster' and 'poster_' in child_2.attrib['uri']:
+							type = re.findall(r'poster_(.*?)_fhd', child_2.attrib['uri'])[0]
+						if child_2.tag == 'Label' and child_2.attrib['name'] == 'line1':
+							if index == 0:
+								if temp:
+									node_list.append(temp)
+								temp = []
+							temp.append(child_2.attrib['text'])
+		return node_list
 
 	@classmethod
 	def switch_ir(self, status):
@@ -262,87 +422,94 @@ class RokuCtrl(Roku, Ir):
 			self.back(time=1)
 
 	def get_dmesg_log(self):
-		with open('dmesg.log','a') as f:
+		with open('dmesg.log', 'a') as f:
 			info = pytest.executer.checkoutput('dmesg')
 			f.write(info)
 		pytest.executer.checkoutput('dmesg -c')
 
-	def get_kernel_log(self):
-		def run_logcast():
-			logging.info('start telnet 8080 to caputre kernel log ')
-			tl = TelnetTool(self.ip, 'sandia')
-			info = tl.checkoutput(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
-			# logging.info(info)
-			tl.execute_cmd('logcast start')
-			time.sleep(2)
-			tl.execute_cmd('\x03')  # ,wildcard=b'Console')
-			time.sleep(2)
-			tl.execute_cmd('\x1A')
-			time.sleep(2)
-			tl.execute_cmd(f'telnet {self.ip} 8070')
+	def get_kernel_log(self, filename='kernel.log'):
+
+		def run_logcast(filename):
 			while True:
 				info = tl.tn.read_very_eager()
 				if info != b'':
-					with open('kernel.log', 'a', encoding='utf-8') as f:
+					with open(filename, 'a', encoding='utf-8') as f:
 						try:
-							info = info.decode('utf-8').strip()
+							info = info.decode('utf-8').replace('\r\n', "\n")
 						except Exception as e:
 							info = ''
 						f.write(info)
 
-		logging.info("Open 8070 to get kernel log")
-		t = Thread(target=run_logcast)
+		logging.info('start telnet 8080 to caputre kernel log ')
+		tl = TelnetTool(self.ip, 'sandia')
+		info = tl.checkoutput(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
+		# logging.info(info)
+		tl.execute_cmd('logcast start')
+		time.sleep(1)
+		tl.execute_cmd('\x03')  # ,wildcard=b'Console')
+		time.sleep(1)
+		tl.execute_cmd('\x1A')
+		time.sleep(1)
+		tl.execute_cmd(f'telnet {self.ip} 8070')
+		t = Thread(target=run_logcast, args=(filename,))
 		t.daemon = True
 		t.start()
 
-	# def home(self, target='Home'):
-	#     logging.info('goto home')
-	#     self.roku.home()
-	#     if target not in self.launcher:
-	#         raise ValueError(f"Doesn't support this ui {target}")
-	#     self.send('home', 1)
-	#     self.send('home', 3)
-	#     # pytest.light_sensor.count_kpi(0, roku_lux.get_note('launcher_50_40')[pytest.panel])
-	#     for _ in range(self.launcher.index(target)):
-	#         self.send('down', 1)
-
-	# def sources(self, target='HDMI 1'):
-	#     logging.info(f'goto {target}')
-	#     if target not in self.source:
-	#         raise IndexError("Not such this source ,pls check again")
-	#     self.roku[f"tvinput.{self.source[target]}"].launch()
-
-	def antenna_scan(self, type='Antenna'):
+	def analyze_logcat(self, re_list, timeout=60):
 		'''
-		launcher -> live tv -> Antenna and input -> Antenna
-		:return:
+		dut 需配置 autostart 文件
+		push autostart 文件
+		1. 创建文件加mkdir -p /nvram/debug_over/etc
+		2. cp /etc/autostart /nvram/debug_overlay/etc
+		3. vi /nvram/debug_overlay/etc/autostart
+		4. export GST_DEBUG=2,amlvsink:6,amlhalasink:6
+		5. 重启 dut
+		Args:
+			re_list:
+
+		Returns:
+
 		'''
-		logging.info('goto scan')
-		self.send('enter', 3)
-		antenna_type = ['Antenna', 'Cable', 'Both', 'Do this later']
-		self.sources()
-		for i in range(antenna_type.index(type)):
-			self.send('down', 1)
-		self.send('enter', 1)
+		tl = TelnetTool(self.ip, 'sandia')
+		tl.checkoutput('logcat')
+		start = time.time()
+		while re_list and (time.time() - start < timeout):
+			info = tl.tn.read_very_eager()
+			if info != b'':
+				info = info.decode('utf-8').replace('\r\n', "\n")
+				with open('logcat.log', 'a') as f:
+					f.write(info)
+				for i in info.split('\n'):
+					# logging.info(f'info : {info}')
+					if len(re_list) >= 5 and (time.time() - start > 5):
+						logging.warning('Playback init with error')
+						pytest.executer.checkoutput('\x03')
+						return False
+					if re_list and re.findall(re_list[0], i):
+						logging.info(re_list[0])
+						re_list.pop(0)
 
-	def antenna_rescan(self):
-		self.sources()
-		self.send('setting', 1)
-		self.send('enter')
+		pytest.executer.checkoutput('\x03')
 
-	def enter_antenna(self):
-		self.sources()
-		self.send('back', 1)
+	def catch_err(self, filename, tag_list):
+		'''
 
-	def enter_settings(self, setting):
-		logging.info(f'goto {setting}')
-		if setting not in self.settings:
-			raise ValueError(f"Doesn't support this setting {setting}")
-		self.home('Settings', 1)
-		self.send('enter', 1)
-		# pytest.light_sensor.count_kpi(2, {'do': 0, 'ao': [0, 450]}, hold_times=10)
-		for _ in range(self.settings.index(setting)):
-			self.send('down', 1)
+		Args:
+			filename:  需要检测的log文件
+			tag_list: 需要捕捉的 关键字 正则表达是
+
+		检测到正则时会通过 logging 输出
+		Returns:
+
+		'''
+		logging.info(f'Start to catch err. Logfile :{filename}')
+		with open(filename, 'r') as f:
+			info = f.readlines()
+		for i in info:
+			res = tag_list.findall(i)
+			if res:
+				logging.warning(res)
+		logging.info('Catch done')
 
 	def shutdown(self):
 		count = 0
@@ -395,11 +562,14 @@ class RokuCtrl(Roku, Ir):
 		else:
 			return True
 
-# def wakeup(self):
-#     count = 0
-#     while not pytest.light_sensor.check_backlight():
-#         # wake upthe dut before test
-#         self.send('power')
-#         time.sleep(10)
-#         if count > 5:
-#             raise EnvironmentError("Pls check ir control")
+	def enter_media_player(self):
+		self['2213'].launch()
+		count = 0
+		while True:
+			self.get_ir_focus()
+			with open('dumpsys.xml', 'r') as f:
+				if 'Media Player' in f.read():
+					return
+				if count > 5:
+					logging.warning("Can't open media player")
+				time.sleep(3)

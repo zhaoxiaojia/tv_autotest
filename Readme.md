@@ -30,7 +30,10 @@ python main.py
 
 ## Changelog - 更新日志
 V1.0  框架初步完成，用例验证符合预期
+
 V1.1  调整config 配置方式，取消 config/roku/config.yaml 中的配置，统一在config/config.yaml 下配置
+
+V1.2  添加 telnet 对不同地域 不同的标识符的适配
 
 ## FAQ - 常见问题
 
