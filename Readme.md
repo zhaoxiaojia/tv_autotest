@@ -35,6 +35,8 @@ V1.1  调整config 配置方式，取消 config/roku/config.yaml 中的配置，
 
 V1.2  添加 telnet 对不同地域 不同的标识符的适配
 
+V2.0  完成本地播放 ui 相关用例 11 调; 调整picture 设置逻辑 
+
 ## FAQ - 常见问题
 
 ## Support - 支持
