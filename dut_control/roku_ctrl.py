@@ -14,6 +14,7 @@ import threading
 import time
 from threading import Thread
 from urllib.parse import quote_plus, urlparse
+from xml.etree import ElementTree as ET
 
 import pytest
 import requests
@@ -21,9 +22,8 @@ from roku import Roku
 
 from dut_control.ir import Ir
 from tool.dut_control.serial_ctrl import SerialCtrl
-from tool.yaml_tool import YamlTool
 from tool.dut_control.telnet_tool import TelnetTool
-from xml.etree import ElementTree as ET
+from tool.yaml_tool import YamlTool
 
 COMMANDS = {
 	# Standard Keys
@@ -150,10 +150,22 @@ class RokuCtrl(Roku, Ir):
 		self.get_kernel_log()
 		self.switch_ir('off')
 		self.current_target_array = 'launcher'
-
+		self._layout_init()
 		# 用于记录当前 遥控光标所在 控件名称
 		self.ir_current_location = ''
 		logging.info('roku init done')
+
+	def _layout_init(self):
+		'''
+		存放ui 布局相关位置信息
+		形式为二维数组 行列对应ui 控件行列 原点左上角
+		Returns:
+
+		'''
+		self.media_player_home = [['All', 'Video', 'Audio', 'Photo']]
+		self.media_player_help_setting = [['Help'], ['Request media type at startup - [On]'],
+		                                  ['Lookup album art on Web - [On]'], ['Display format - [Grid]'],
+		                                  ['Autorun - [On]'], ['OK']]
 
 	def __getattr__(self, name):
 		if name not in COMMANDS and name not in SENSORS:
@@ -236,15 +248,32 @@ class RokuCtrl(Roku, Ir):
 				if child_1.tag == 'ItemDetailsView':
 					for child_2 in child_1.iter():
 						if child_2.tag == 'Label' and child_2.attrib['name'] == 'title':
-							logging.info(child_2.attrib['text'])
+							# logging.info(child_2.attrib['text'])
 							if child_2.attrib['text']:
-								self.ir_current_location = child_2.attrib['text']
-								return
+								if '|' in child_2.attrib['text']:
+									# 处理 media player audio ui 多文件名描述
+									self.ir_current_location = child_2.attrib['text'].split('|')[0].strip()
+								else:
+									self.ir_current_location = child_2.attrib['text']
+								return self.ir_current_location
+				if child_1.tag == 'RenderableNode' and child_1.attrib.get('focused') and child_1.attrib[
+					'focused'] == 'true':
+					# 处理 picture mode 相关 悬浮菜单
+					if child_1.attrib.get('uiElementId') and child_1.attrib['uiElementId'] != 'overlay-root':
+						self.ir_current_location = \
+							child_1.find('RadioButtonItem').find('ScrollingLabel').find('Label').attrib['text']
+						# logging.info(f'{self.ir_current_location}')
+						return self.ir_current_location
+				if child_1.tag == 'Button' and child_1.attrib.get('focused') and child_1.attrib['focused'] == 'true':
+					self.ir_current_location = child_1.find('Label').attrib['text']
+					# logging.info(f'show display {self.ir_current_location}')
+					return self.ir_current_location
 				if child_1.tag == 'StandardGridItemComponent':
 					if child_1.attrib.get('focused') and child_1.attrib['focused'] == 'true':
-						logging.info(child_1.attrib['text'])
+						# logging.info(child_1.attrib['text'])
 						node_list.append(child_1)
-		self.ir_current_location = node_list[-1].find('LayoutGroup').find('Label').attrib['text']
+		if node_list:
+			self.ir_current_location = node_list[-1].find('LayoutGroup').find('Label').attrib['text']
 
 	def get_ir_index(self, name, array):
 		'''
@@ -260,23 +289,27 @@ class RokuCtrl(Roku, Ir):
 			target_array = self.load_array(self.current_target_array + '.txt')
 		else:
 			target_array = array
-		logging.info(f"Try to get index of  {name}")
+		# logging.info(f"Try to get index of  {name}")
+		# logging.info(f'Target array {array}')
 		for i in target_array:
 			for y in i:
 				if name == y:
-					logging.info(f'Get location : {target_array.index(i)}  {i.index(y)}')
+					# logging.info(f'Get location : {target_array.index(i)}  {i.index(y)}')
 					return (target_array.index(i), i.index(y))
 		logging.warning("Can't find such this widget")
 		return None
 
 	def ir_navigation(self, target, array):
 		self.get_ir_focus()
+		# logging.info(f'ir_navigation {array}')
+		logging.info(f'{self.ir_current_location} {target}')
 		current_index = self.get_ir_index(self.ir_current_location, array)
 		target_index = self.get_ir_index(target, array)
 		x_step = abs(target_index[0] - current_index[0])
 		y_step = abs(target_index[1] - current_index[1])
 		if x_step == 0 and y_step == 0:
-			return
+			logging.info('navigation done')
+			return True
 		if target_index[0] > current_index[0]:
 			self.down(time=1)
 		elif target_index[0] == current_index[0]:
@@ -286,22 +319,28 @@ class RokuCtrl(Roku, Ir):
 				self.left(time=1)
 		else:
 			self.up(time=1)
-		self.ir_navigation(target, array)
+		return self.ir_navigation(target, array)
 
 	def ir_enter(self, target, array):
-		self.ir_navigation(self.get_ir_index(target, array))
-		self.select(0.5)
+		self.ir_navigation(target, array)
+		self.select(time=0.5)
 
-	def _get_screen_xml(self, filename):
+	def _get_screen_xml(self, filename='dumpsys.xml'):
 		'''
-
+		http://192.168.50.109:8060/query/screen/secret
+		从roku 服务器获取当前页面的 控件xml
 		Returns:
 
 		'''
-		url = f"http://{roku_ip}:8060/query/screen/secret"
-		r = requests.get(url).content.decode('utf-8')
-		with open(file='dumpsys.xml', mode='w') as handle:
+		r = ''
+		for _ in range(5):
+			url = f"http://{roku_ip}:8060/query/screen/secret"
+			r = requests.get(url).content.decode('utf-8')
+			if 'Internal error' not in r:
+				break
+		with open(file='dumpsys.xml', mode='w', encoding='utf-8') as handle:
 			handle.write(r)
+		return r
 
 	def get_u_disk_file_distribution(self, filename='dumpsys.xml'):
 		'''
@@ -321,14 +360,15 @@ class RokuCtrl(Roku, Ir):
 				if child_1.tag == 'StandardGridItemComponent':
 					index = int(child_1.attrib['index'])
 					for child_2 in child_1.iter():
-						if child_2.tag == 'Poster' and 'poster_' in child_2.attrib['uri']:
-							type = re.findall(r'poster_(.*?)_fhd', child_2.attrib['uri'])[0]
+						# if child_2.tag == 'Poster' and 'poster_' in child_2.attrib['uri']:
+						# 	type = re.findall(r'poster_(.*?)_fhd', child_2.attrib['uri'])[0]
 						if child_2.tag == 'Label' and child_2.attrib['name'] == 'line1':
 							if index == 0:
 								if temp:
 									node_list.append(temp)
 								temp = []
 							temp.append(child_2.attrib['text'])
+		self.media_player_dumpsys = node_list
 		return node_list
 
 	@classmethod
@@ -341,85 +381,68 @@ class RokuCtrl(Roku, Ir):
 		pytest.executer.checkoutput(ir_command[status])
 
 	def get_display_size(self, size):
-		for _ in range(7):
+		for _ in range(9):
 			if self.get_ir_focus() == size:
 				self.ptc_size = size
 				self.select(time=1)
 				break
+			self.down(time=1)
 			time.sleep(1)
 		else:
 			logging.warning(f"Can't set display size into {size}")
 		logging.info(f'Current size : {size}')
 
 	def get_display_mode(self, mode):
-		for _ in range(7):
+		for _ in range(9):
 			if self.get_ir_focus() == mode:
 				self.ptc_mode = mode
 				self.select(time=1)
 				break
+			self.down(time=1)
 			time.sleep(1)
 		else:
 			logging.warning(f"Can't set display mode into {mode}")
 		logging.info(f'Current mode : {mode}')
 
 	def set_picture_mode(self, mode):
-		def ui_down(mode):
-			while self.ptc_mode != mode:
-				self.down(time=1)
 
-		if self.ptc_mode != mode:
-			# mode_list = ['EcoSave', 'Normal', 'Vivid', 'Sports', 'Movie']
-			# if mode not in mode_list:
-			# 	raise IndexError("Doesn't support this mode, pls check again")
-			logging.info(f'Try to set picture mode into {mode}')
-			self.info()
-			if pytest.light_sensor:
-				res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-				if not res:
-					self.info()
-			else:
-				time.sleep(3)
-			self.down(time=1)
+		self.info(time=3)
+		if pytest.light_sensor:
+			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+			if not res:
+				self.info()
+		self.down(time=1)
+		self.select(time=1)
+		self.down(time=1)
+		for i in mode:
+			logging.info(f'Try to set picture mode into {i}')
 			self.select(time=1)
-			self.down(time=1)
-			self.select(time=1)
-			t = Thread(target=ui_down, args=(mode,))
-			t.daemon = True
-			t.start()
-			self.get_display_mode(mode)
-			self.back(time=1)
-			self.back(time=1)
+			if self.ptc_mode != i:
+				self.get_display_mode(i)
+		self.back(time=1)
+		self.back(time=1)
 
 	def set_picture_size(self, size):
-		def ui_down(size):
-			while self.ptc_size != size:
-				self.down(time=1)
-
-		if self.ptc_size != size:
-			# if size not in self.PTC_SIZE:
-			# 	raise IndexError("Doesn't support this mode, pls check again")
-			# logging.info(f'Try to set picture size into {size}')
-			self.info()
-			if pytest.light_sensor:
-				res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-				if not res:
-					self.info()
-			time.sleep(3)
+		self.info(time=3)
+		if pytest.light_sensor:
+			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+			if not res:
+				self.info()
+		self.down(time=1)
+		self.select(time=1)
+		self.down(time=1)
+		self.down(time=1)
+		self.select(time=1)
+		for _ in range(6):
 			self.down(time=1)
+		for i in size:
+			logging.info(f'Try to set picture size into {i}')
 			self.select(time=1)
-			self.down(time=1)
-			self.down(time=1)
-			self.select(time=1)
-			for _ in range(6):
-				self.down(time=1)
-			self.select(time=1)
-			t = Thread(target=ui_down, args=(size,))
-			t.daemon = True
-			t.start()
-			self.get_display_size(size)
-			self.back(time=1)
-			self.back(time=1)
-			self.back(time=1)
+			if self.ptc_size != i:
+				self.get_display_size(i)
+		self.back(time=1)
+		self.back(time=1)
+		self.back(time=1)
 
 	def get_dmesg_log(self):
 		with open('dmesg.log', 'a') as f:
@@ -470,7 +493,7 @@ class RokuCtrl(Roku, Ir):
 		Returns:
 
 		'''
-		tl = TelnetTool(self.ip, 'sandia')
+		tl = TelnetTool(self.ip, pytest.executer.wildcard)
 		tl.checkoutput('logcat')
 		start = time.time()
 		while re_list and (time.time() - start < timeout):
@@ -567,9 +590,21 @@ class RokuCtrl(Roku, Ir):
 		count = 0
 		while True:
 			self.get_ir_focus()
-			with open('dumpsys.xml', 'r') as f:
-				if 'Media Player' in f.read():
+			with open('dumpsys.xml', 'r', encoding='utf-8') as f:
+				if 'Media Type Selection' in f.read():
+					logging.info('enter done')
 					return
+				self.back(time=1)
 				if count > 5:
 					logging.warning("Can't open media player")
 				time.sleep(3)
+
+	def check_udisk(self):
+		'''
+		在media player 界面内 检测是否 外接u盘
+		dumpsys 当前页面
+		判断是否存在 Connecting to a DLNA Media Server or USB Device 字样
+		Returns:
+
+		'''
+		return 'Select Media Device' in self._get_screen_xml()

@@ -30,7 +30,7 @@ connect_type:
 
 # 信号发射器 相关配置
 pattern_generator:
-  status: True
+  status: False
   # 目前只支持 8100s
   device: master_8100s
   # 串口连接方式

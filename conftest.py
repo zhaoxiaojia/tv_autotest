@@ -20,13 +20,12 @@ import time
 
 import pytest
 
+from third_party_equipment import ThirdPartyEqupment
 from tool.dut_control.adb import Adb
 from tool.dut_control.irsend import Irsend
 from tool.dut_control.telnet_tool import TelnetTool
-
 from tool.test_result import TestResult
 from tool.yaml_tool import YamlTool
-from third_party_equipment import ThirdPartyEqupment
 
 
 def pytest_sessionstart(session):

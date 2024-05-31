@@ -6,24 +6,26 @@
 # @Project : kpi_test
 # @Software: PyCharm
 
-import json
-import subprocess
-import os
-import time
 import ast
-import pytest
 import datetime
+import json
+import os
 import shutil
+import subprocess
 import sys
 import threading
+import time
 import traceback
+
+import pytest
 
 from dut_control.roku_ctrl import RokuCtrl
 
 timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 # 参数为需要运行的测试用例 可以是文件或者文件夹目录
 # test_case = 'test/roku/Hdmi/CEA-861/test_C84431.py'
-test_case = 'test/roku/Usb-Local/UI/Media-Player-Home-Screen/test_T825138.py'
+# test_case = 'test/roku/Usb-Local/UI/Media-Player-Home-Screen/test_T825138.py'
+test_case = 'test/roku/Usb-Local'
 # test_case = 'test/roku/test_demo.py'
 report_parent_path = test_case.replace('test', 'report')
 

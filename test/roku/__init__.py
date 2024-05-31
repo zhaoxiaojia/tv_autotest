@@ -8,12 +8,15 @@
 
 import logging
 import os
+
 import pytest
+
+from command.roku.roku_command import RokuCommand
 from dut_control.roku_ctrl import RokuCtrl
 from tool.dut_control.serial_ctrl import SerialCtrl
 from tool.pil_tool import PilTool
-from tool.yaml_tool import YamlTool
 from tool.signal_generator.master_8100s import Master_8100s
+from tool.yaml_tool import YamlTool
 
 odm = 'changhong'
 mode_list = ['Low power', 'Vivid', 'Sports', 'Movie', 'Standard']
@@ -31,6 +34,7 @@ if roku_env.get_note('pytest.pattern_generator') == 'master_8100s':
 	...
 
 roku_ctl = RokuCtrl()
+command = RokuCommand()
 pytest.executer.checkoutput('echo 6 > /proc/sys/kernel/printk')
 pytest.executer.checkoutput('echo log_level 0x2b > /sys/class/hdmirx/hdmirx0/param')
 # roku_ctl.ser.write('\x1A')

@@ -7,9 +7,10 @@
 # @Author     : chao.li
 # @Software   : PyCharm
 """
-import threadpool
 import threading
 import time
+
+import threadpool
 
 LOCK = threading.Lock()
 

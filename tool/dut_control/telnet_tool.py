@@ -30,7 +30,7 @@ class TelnetTool(Executer):
 	def __init__(self, ip, wildcard):
 		super().__init__()
 		self.ip = ip
-		self.wildcard = cmd_line_wildcard[wildcard]
+		self.wildcard = cmd_line_wildcard[wildcard] if type(wildcard) == str else wildcard
 		try:
 			logging.info(f'Try to connect {ip}')
 			self.tn = telnetlib.Telnet()

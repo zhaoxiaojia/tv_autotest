@@ -8,13 +8,11 @@
 # @Software   : PyCharm
 """
 import logging
-
-import pytest
-from tool.yaml_tool import YamlTool
 import os
 
+import pytest
 
-
+from tool.yaml_tool import YamlTool
 
 
 class ThirdPartyEqupment:
