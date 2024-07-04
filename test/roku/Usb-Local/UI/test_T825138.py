@@ -44,9 +44,9 @@ target_file_set = {'folder', 'video'}
 
 def test_video_tile():
 	roku_ctl.enter_media_player()
-	roku_ctl.ir_enter('Video', roku_ctl.media_player_home)
-	time.sleep(2)
+	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
+	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
 	dumpsys = roku_ctl._get_screen_xml()
 	type_list = set(re.findall(r'poster_(.*?)_fhd', dumpsys))

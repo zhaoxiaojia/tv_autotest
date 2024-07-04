@@ -53,7 +53,8 @@ target_file = 'bbb-4mbps-24fps.h264.ac3'
 
 def test_picture_size_mode():
 	roku_ctl.enter_media_player()
-	roku_ctl.ir_enter('Video', roku_ctl.media_player_home)
+	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
+	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
 	roku_ctl.ir_enter(target_file, roku_ctl.get_u_disk_file_distribution())
 	if 'Play from beginning' in roku_ctl._get_screen_xml():

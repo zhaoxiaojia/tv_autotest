@@ -48,7 +48,7 @@ def setup_teardown():
 def test_help_setting_display():
 	roku_ctl.enter_media_player()
 	roku_ctl.info(time=1)
-	roku_ctl.ir_enter('Help', roku_ctl.media_player_help_setting)
+	roku_ctl.ir_enter('Help', roku_ctl.layout_media_player_help_setting)
 	for i in help_description:
 		assert i in roku_ctl._get_screen_xml(), "Help description not expected"
 		roku_ctl.down(time=1)

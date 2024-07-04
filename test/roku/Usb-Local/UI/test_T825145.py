@@ -54,7 +54,8 @@ def setup_teardown():
 
 def test_file_type():
 	roku_ctl.enter_media_player()
-	roku_ctl.ir_enter('Video', roku_ctl.media_player_home)
+	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
+	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
 	for i in ['audio', 'image', 'video']:
 		roku_ctl.info(time=1)

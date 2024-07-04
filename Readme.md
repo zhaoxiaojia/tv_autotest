@@ -5,7 +5,9 @@
 [Badges]
 
 ## Introduction - 介绍
-Roku tv项目 HDMI 半自动化测试套件，覆盖CEA-861 以及 VESA-Signals-PC 两部分测试用例
+Roku tv项目半自动化测试套件，
+覆盖 HDMI  CEA-861 以及 VESA-Signals-PC 两部分测试用例
+覆盖 USB Local  UI、Options、Functional-Video、Functional-Audio、Functional-Photo几部分测试用例
 
 ### Summary - 概要
 基于pytest框架开发的 自动化测试工具，用于amlogic tv项目 产品线
@@ -35,7 +37,9 @@ V1.1  调整config 配置方式，取消 config/roku/config.yaml 中的配置，
 
 V1.2  添加 telnet 对不同地域 不同的标识符的适配
 
-V2.0  完成本地播放 ui 相关用例 11 调; 调整picture 设置逻辑 
+V2.0  完成本地播放 ui 相关用例 11 条; 调整picture 设置逻辑 
+
+V2.1  完成本地播放相关用例53条；完成第一阶段
 
 ## FAQ - 常见问题
 
@@ -49,6 +53,6 @@ qq: 257912958
 teams: chao.li
 
 ## Authors and acknowledgment - 贡献者和感谢
-@jianhui.peng @jianfan.ai 
+@jianhui.peng @jianfan.ai@menghui.liu
 
 ## License - 版权信息

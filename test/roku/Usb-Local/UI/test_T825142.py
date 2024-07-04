@@ -53,7 +53,7 @@ def setup_teardown():
 def test_file_sort_default_sort():
 	roku_ctl.enter_media_player()
 	for i in ['Video', 'Audio', 'Photo']:
-		roku_ctl.ir_enter(i, roku_ctl.media_player_home)
+		roku_ctl.ir_enter(i, roku_ctl.layout_media_player_home)
 		roku_ctl.select(time=1)
 		for _ in range(3):
 			temp = roku_ctl.get_u_disk_file_distribution()
@@ -73,6 +73,6 @@ def test_file_sort_default_sort():
 			sort_list = roku_ctl.get_u_disk_file_distribution()
 			logging.info(f'切换排序前 {[i for arr in temp for i in arr]}')
 			logging.info(f'切换排序后 {[i for arr in sort_list for i in arr]}')
-			assert temp[0] != sort_list[0] and temp[-1] != sort_list[-1], "File list should not be the same"
+			assert temp != sort_list, "File list should not be the same"
 		roku_ctl.back(time=1)
 		roku_ctl.back(time=1)

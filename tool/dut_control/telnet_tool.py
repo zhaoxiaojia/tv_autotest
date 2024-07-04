@@ -1,13 +1,11 @@
-#!/usr/bin/env python 
-# -*- coding: utf-8 -*- 
-
+# !/usr/bin/env python
+# -*-coding:utf-8 -*-
 
 """
-# File       : TelnetConnect.py
-# Time       ：2023/6/30 16:57
-# Author     ：chao.li
-# version    ：python 3.9
-# Description：
+# File        : telnet_tool.py
+# @Time       : 2024/6/11 16:51
+# @Author     : chao.li
+# @Software   : PyCharm
 """
 
 import logging
@@ -56,15 +54,15 @@ class TelnetTool(Executer):
 		logging.info(f'telnet type cmd : {cmd}')
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		try:
-			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
+			res = self.tn.read_eager().decode('utf-8').replace('\r\n', '\n')
 		except Exception as e:
 			self.tn.open(self.ip)
-			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
+			res = self.tn.read_eager().decode('utf-8').replace('\r\n', '\n')
 		time.sleep(1)
 		return res.strip()
 
-	def subprocess_run(self, cmd):
-		return self.checkoutput(cmd)
+	# def subprocess_run(self, cmd):
+	# 	return self.checkoutput(cmd)
 
 	def root(self):
 		...
@@ -81,10 +79,9 @@ class TelnetTool(Executer):
 	def get_mcs_rx(self):
 		return 'mcs_rx'
 
-
-tl = TelnetTool('192.168.50.109', 'sandia')
-info = tl.checkoutput('cat /sys/class/v4ldec/status')
-print(info)
+# tl = TelnetTool('192.168.50.109', 'sandia')
+# info = tl.execute_cmd('cat /sys/module/aml_media/parameters/new_frame_count')
+# print(tl.tn.read_very_lazy())
 # while True:
 # 	info = tl.tn.read_very_eager()
 # 	if info != b'':

@@ -1,0 +1,382 @@
+#!/bin/sh
+
+# Reduce default thread stack size for processes forked from this context.
+# (by default this value is 8192 (kB))
+ulimit -s 1024
+
+# Set the max open file limit per process
+ulimit -n 4096
+
+echo -1000 > /proc/self/oom_score_adj
+
+read roku_dev_mode rest < /proc/cmdline
+devunit=0; [ "$roku_dev_mode" = 'dev=1' ]  && devunit=1
+
+if [ "$MANUFACTURING" = "yes" ]
+then
+    isScritpsSkippedByFirstBoot=0
+    #projectid=$(pcedit -q projectid 2>/dev/null)
+    #if [ "$projectid" = "(unset)" ] || [ "$projectid" = "0" ]; then
+    if [ -f /tmp/project_id_not_set ]; then
+        isScritpsSkippedByFirstBoot=1
+    fi
+    # This app sets project id from usb or serial port if projectid info not set.
+    MfgFirstBoot $devunit
+    # Ignore some signals to prevent dropping into shell
+    trap "" 0 1 2 3 9 13 15 20 # EXIT HUP INT QUIT KILL PIPE TERM TSTP
+
+    if [ $isScritpsSkippedByFirstBoot = "1" -a $(ubappedit -q mfgprojectidchange) = "true" ] ; then
+        # project id changed, force reload
+        echo reload custom_pkg $(esn 2>/dev/null &)
+        # to keep pq loading correctly, since the project id reloaded
+        projectid=$(pcedit -q projectid 2>/dev/null)
+        if [ ! "$projectid" = "(unset)" ] && [ ! "$projectid" = "0" ]; then
+            rm -f /tmp/project_id_not_set
+        fi
+
+    fi
+<< comment_off_no_more_needed
+    # following mechanism as a temporary solution never notifies the FAE.
+    # so it is safe to remove it, the result it achieves can be done by change the Default softlinks
+    # set default project id if defined
+    pcdump=$(pcedit -d | grep ^"PC\[\"")
+    # only when pc is empty
+    if [ "$pcdump" = "" ]; then
+        token="//#!proj_id_default="
+        # only when token defined
+        default_pid=$(grep ^$token[0-9][0-9]* /custom/projects)
+        if [ ! "$default_pid" = "" ]; then
+            default_pid=${default_pid:${#token}}
+#    echo $default_pid ${#token}
+            # check if the default project id is valid
+            exists=$(cat /custom/projects | sed 's/\/\/.*//g' | tr -d " \t" | grep ^"\"id\":$default_pid",)
+#    echo "pcdump: $pcdump"
+#    echo "exist: $exists"
+            if [ ! "$exists" = "" ]; then
+                echo "set default project id to $default_pid"
+                pcedit projectid=$default_pid -wf
+            fi
+        fi
+    fi
+comment_off_no_more_needed
+fi
+
+# Developer mode command insertion or full autostart replacement:
+if [ $devunit = 1 -a -f /nvram/autostart ]; then
+    echo
+    echo "=== AUTOSTART from /nvram/autostart"
+    source /nvram/autostart
+    # allowed to return here
+fi
+
+APP_CORE_PATTERN=core
+
+if [ $devunit = 1 -a -f /etc/autostart-dev ]; then
+    echo
+    echo "=== AUTOSTART from /etc/autostart-dev"
+    source /etc/autostart-dev
+    # allowed to return here
+fi
+
+
+# local core server
+
+IFACE=""
+for iface in "usb0" "eth0"; do
+    if [ -d "/sys/class/net/${iface}" ]; then
+        IFACE="${iface}"
+        break
+    fi
+done
+
+COREIP=`sed -n 's/.*coreserver=\([^ ]*\).*/\1/p' /proc/cmdline`
+if [ -n "$COREIP" ] && [ -n "$IFACE" ]; then
+
+    echo "Using local coreserver"
+
+    ifconfig "${IFACE}" up
+    udhcpc -i "${IFACE}" -s /etc/udhcpc.sh -q
+
+    COREMOUNT=/tmp/cores
+    umount $COREMOUNT
+    mkdir -p $COREMOUNT
+    chmod a+rwx $COREMOUNT
+    COREEXPORT=`sed -n 's/.*coreexport=\([^ ]*\).*/\1/p' /proc/cmdline`
+    if [ -z "$COREEXPORT" ]; then
+        COREEXPORT=/opt/nfsmounts/cores
+    fi
+    mount -t nfs -o nolock $COREIP:$COREEXPORT $COREMOUNT
+    APP_CORE_PATTERN=$COREMOUNT/%e.%t
+    ulimit -c unlimited
+fi
+
+if [ "$MANUFACTURING" = "yes" ]; then
+    # this might solve the problem about the channel database
+    for db in atsc-channels.db isdb-channels.db; do
+    if [ -f /nvram/$db ]; then
+        echo "$db already present in NVRAM."
+    elif [ -f /custom/presets/$db ]; then
+        echo "Copying $db from custom package."
+        cp /custom/presets/$db /nvram
+    fi
+    done
+
+    # Check if system.conf need to be replaced,
+    # otherwise go to guided setup on the MFG image.
+    grep -q "LinkSetupComplete=true" /nvram/system.conf 2>/dev/null
+    if [ $? -ne 0 ]; then
+        rm /nvram/system.conf /nvram/system.conf.bak 2>/dev/null
+    fi
+    if [ ! -f /nvram/system.conf ]; then
+        cp /etc/system_manu.conf /nvram/system.conf
+        if [ -f /custom/config/system_manu.conf ]; then
+            cat /custom/config/system_manu.conf >> /nvram/system.conf
+        fi
+        chmod 0644 /nvram/system.conf
+    fi
+fi
+
+# The PQ & AQ databases and init are launched concurrently in order to
+#  speed-up boot times. Each subprocess PID is maintained in a string-array
+#  since the ash shell doesn't support arrays natively.
+pids=""
+
+# Force startup daemon to run only once.
+if [ -e /bin/ZipMountServer -a -z "$(pidof ZipMountServer)" ]; then
+    /bin/ZipMountServer &
+    pids="${pids} $!"
+fi
+
+pcedit=`pcedit -q rokumodel odmmodel panel speaker 2> /dev/null | tail -4`
+IFS='\n' set -- $pcedit; model=$1; odmmodel=$2; panel=$3; speaker=$4; unset IFS
+
+echo odmmodel=${odmmodel} model=${model} panel=${panel} speaker=${speaker}
+
+# pq input directories can come from multiple locations. By default it only comes from /custom/pq.
+# If TV is a dev unit or in manufacture mode, script allows side loading pq files from
+# /media/ext*:/pq, /nvram/pq, /custom/pq, in that order.
+# script traverses each pq input directory to search for the target files by a specific order.
+# for example, the script searches the pq datebase file in a pq directory in the order below.
+#  1. if V_{rokumodel}_{panel}.txt exists, use it.
+#   2. elif V_{rokumodel}.txt exists, use it.
+#    3. elif V_{panel}.txt exists, use it.
+#     4. elif V_Default.txt exists, use it.
+
+sideload_dirs=""
+if [ $devunit = 1 -o "$MANUFACTURING" = "yes" ]; then
+    dirs_="`mount | grep /media/ext | awk '{print $3 "/pq"}'` /nvram/pq"
+    for dir in ${dirs_}; do
+        if [ -d ${dir} ]; then
+            sideload_dirs="${sideload_dirs} $dir"
+        fi
+    done
+fi
+
+if [ -n "${sideload_dirs}" ]; then
+    pq_dirs="${sideload_dirs} /custom/pq"
+else
+    pq_dirs="/custom/pq"
+fi
+
+found=0
+for dir in ${pq_dirs}; do
+    for pqdb_file in V_Model.txt V_${model}_${panel}.txt V_${model}.txt V_${panel}.txt V_Default.txt; do
+        if [ -e "${dir}/${pqdb_file}" ]; then
+            found=1
+            echo "pqconfig is using ${dir}/${pqdb_file}"
+            (
+            pqconfig /tmp/V_Default.pqdb fileinit "${dir}/${pqdb_file}" > /dev/null 2>&1
+            rm -f /tmp/V_Default.pqdb.bak
+            ) &
+            pids="${pids} $!"
+            break
+        fi
+    done
+    if [ ${found} -eq 1 ]; then
+        break
+    fi
+done
+if [ ${found} -eq 0 ]; then
+    echo "Error!!! Can't find pqdb file in ${pq_dirs}"
+fi
+
+projectid_set=1
+if [ -e /tmp/project_id_not_set ]; then
+    projectid_set=0
+fi
+
+# Call out to platform pq script to handle any platform specific stuff
+/etc/platform_pq.sh "${pq_dirs}" ${model} ${panel} ${projectid_set} /tmp/pq &
+pids="${pids} $!"
+
+
+# TODO: if vendor has model dependent configuration files
+#       it should be compressed and named as ${model}_${panel}.zip
+#       we are going to extract it here and put into '/tmp' folder
+
+# Figure out the AQ database file.  AQ is hierarchical i.e. load any model/panel or model specific
+# file, then Default file, and finally the Master file.  The AQ loading process is as-follows:
+#
+#  1. If dev_mode, try loading A_{rokumodel}_{speaker}.txt from USB stick.  If doesn't exist,
+#   2. If dev_mode, try loading A_{rokumodel}.txt from USB stick.  If doesn't exist,
+#    3. Try loading A_{rokumode}_{speaker}.txt from /custom/aq acramfs.  If doesn't exixt,
+#     4. Try loading A_{rokumode}.txt from /custom/aq acramfs.
+#
+#  5. If dev_mode, try loading A_Default.txt from USB stick.  If doesn't exist,
+#   6. Load A_Default.txt from /custom/aq acramfs.
+#
+#  7. Load A_Master.txt from /custom/aq acramfs.
+#
+# Also, if there is an "aq/" directory on the USB stick, first copy all files
+# from USB stick aq/ directory into NVRAM (i.e. nvram/aq directory).
+#
+aq_dir="/custom/aq"
+
+# check if configuration file for AQ exits in USB drive
+if [ $devunit = 1 ]; then
+    usb_path="/media/ext1:/aq" #NOTE: we do not need '\' here
+    if [ -d "${usb_path}" ] ; then
+        rm -rf /nvram/aq                # clean up '/nvram/aq' only when sideloading
+        mkdir -p /nvram/aq
+        cp -r ${usb_path}/. /nvram/aq   # /. is important since FAT is case insensitive
+        echo "Copied AQ data from USB to /nvram"
+    fi
+    if [ -e "${usb_path}/A_${model}_${speaker}.txt" ] ; then
+        echo "using '${usb_path}/A_${model}_${speaker}.txt'"
+        aq_dir=${usb_path}
+    elif [ -e "${usb_path}/A_${model}.txt" ] ; then
+        echo "using '${usb_path}/A_${model}.txt'"
+        aq_dir=${usb_path}
+    # Make it easier to sideload model layer from USB
+    elif [ -e "${usb_path}/A_Model.txt" ] ; then
+        echo "using '${usb_path}/A_Model.txt'"
+        aq_dir=${usb_path}
+    fi
+fi
+(
+# Model is the model specific settings, if any
+if [ -e "${aq_dir}/A_${model}_${speaker}.txt" ] ; then
+  pqconfig /tmp/A_Model.aqdb fileinit "${aq_dir}/A_${model}_${speaker}.txt" > /dev/null 2>&1
+elif [ -e "${aq_dir}/A_${model}.txt" ] ; then
+  pqconfig /tmp/A_Model.aqdb fileinit "${aq_dir}/A_${model}.txt" > /dev/null 2>&1
+elif [ -e "${aq_dir}/A_Model.txt" ] ; then
+  pqconfig /tmp/A_Model.aqdb fileinit "${aq_dir}/A_Model.txt" > /dev/null 2>&1
+fi
+rm -f /tmp/A_Model.aqdb.bak
+) &
+pids="${pids} $!"
+
+# For AQ, we always process A_Default.txt unlike PQ...
+aq_dir="/custom/aq"
+
+# check if configuration file for AQ exits in USB drive
+if [ $devunit = 1 ]; then
+    usb_path="/media/ext1:/aq" #NOTE: we do not need '\' here
+    if [ -e "${usb_path}/A_Default.txt" ] ; then
+        echo "using '${usb_path}/A_Default.txt'"
+        aq_dir=${usb_path}
+    fi
+fi
+(
+if [ -e ${aq_dir}/A_Default.txt ] ; then
+  pqconfig /tmp/A_Default.aqdb fileinit ${aq_dir}/A_Default.txt > /dev/null 2>&1
+fi
+rm -f /tmp/A_Default.aqdb.bak
+) &
+pids="${pids} $!"
+
+# A_Master.aqdb is a new addition.  It is the base layer for all products
+# containing all settings and their default values.  Simplifies the code in
+# audio device for initializing the aqdb.
+(
+if [ -e /custom/aq/A_Master.txt ] ; then
+  pqconfig /tmp/A_Master.aqdb fileinit /custom/aq/A_Master.txt > /dev/null 2>&1
+fi
+rm -f /tmp/A_Master.aqdb.bak
+) &
+pids="${pids} $!"
+
+# Support split sound modes for VSurr toggle
+(
+if [ -e /custom/aq/A_Master_VSurr_Supp.txt ] ; then
+  pqconfig /tmp/A_Master_VSurr_Supp.aqdb fileinit /custom/aq/A_Master_VSurr_Supp.txt > /dev/null 2>&1
+fi
+rm -f /tmp/A_Master_VSurr_Supp.aqdb.bak
+) &
+pids="${pids} $!"
+
+# appargs can start with values from /nvram/autostart
+appargs="-qws -nomouse -nokeyboard $appargs"
+
+# FW-15149: QWS_DISPLAY environment variable instead of command line args
+#export QWS_DISPLAY="directfb:flip=blit,onsync:boundingrectflip:bgcolor=#000000"
+
+# wait for first_boot_plugins.sh to finish
+flag=/tmp/first_boot_plugins_flag
+while [ -e "$flag" ]; do usleep 1000; done
+
+# enable the compositor
+export R2D2_IPC=1
+chmod 666 /dev/ion
+
+export CURDIR=/usr/lib
+#export LD_LIBRARY_PATH=$CURDIR/solib:$CURDIR/solib/directfb-1.4-0:$CURDIR/solib/directfb-1.4-0/gfxdrivers:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/inputdrivers:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/interfaces:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/interfaces/IDirectFBFont:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/interfaces/IDirectFBImageProvider:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/interfaces/IDirectFBVideoProvider:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/systems:$CURDIR/solib:$CURDIR/solib/directfb-1.4-0/wm:$LD_LIBRARY_PATH
+
+# Wait for all the PQ & AQ subprocesses to finish before launching
+#  the Application
+for pid in $pids; do
+    wait $pid
+done
+
+# start pq service
+/etc/aml_pqservice start
+
+chmod 666 /sys/class/backlight/aml-bl/brightness
+
+echo Starting the application...
+su app -c "mkdir -p /tmp/app_perf"
+cat /proc/uptime > /tmp/app_perf/start_app
+
+# Gstreamer debug
+export GST_DEBUG=2,amlvsink:6,amlhalasink:6,pal*:7
+export GST_DEBUG_NO_COLOR=1
+export AML_ENABLE_DUMP_CLEAR_VIDEO=1
+export AML_AVSYNC_DEBUG_LEVEL=0
+#echo "/nvram" > /sys/class/v4ldec/dump_path
+#echo 10000 > /sys/module/amvdec_ports/parameters/dump_capture_frame
+#echo 9000 > /sys/module/amvdec_ports/parameters/dump_output_frame
+
+while true; do
+    echo "/etc/autostart: app begin" > /dev/kmsg
+
+    echo "$APP_CORE_PATTERN" >/proc/sys/kernel/core_pattern # make sure core dumps are enabled
+    ( cd bin; $appenvr source ./launch_app.sh  $appargs )
+
+    if [ ! -f /tmp/restart-application ]; then
+        echo "Application exit without intent to restart" > /dev/kmsg
+        break
+    fi
+
+    # Checking if application crashed before suspend magic
+    core_pattern=`cat /proc/sys/kernel/core_pattern`
+    if [ $core_pattern != "-" ]; then
+        echo "Application crashed during restart"
+        echo "Application crashed during restart" > /dev/kmsg
+        echo b > /proc/sysrq-trigger
+        break
+    fi
+
+    echo "/etc/autostart: app done" > /dev/kmsg
+
+    # Make the frontpanel led blink
+    roku_led frontpanel booting
+    # Tell the ZipMountServer to clear all mounts.
+    plethora msg-send /zip-client '{ "action":"clear" }' 4 1024
+    plethora msg-receive /zip-server
+    killall dbgserver
+    killall -9 WLCommandRunner
+    killall -9 mongoose
+    # Remove PlayReady session keys
+    rm -rf /tmp/playready
+    /bin/suspend.sh
+done

@@ -2,8 +2,8 @@
 # -*-coding:utf-8 -*-
 
 """
-# File        : test_T825139.py
-# @Time       : 2024/5/28 19:19
+# File        : test_T825140.py
+# @Time       : 2024/5/28 19:48
 # @Author     : chao.li
 # @Software   : PyCharm
 """
@@ -18,13 +18,13 @@ import pytest
 '''
 Setps:
 	1.Open USB Media Player
-	2.Navigate to Audio tile
+	2.Navigate to Photo tile
 	3.Select your USB drive
 
 Expected Result:
-	1.On selecting Audio tile, USB Drive/Media Server should be displayed (Note: DLNA media servers on the same network will also be displayed when in connected mode)
-	2.You should only see folders and Audio files.
-	3.You are able to select and play Audio files.
+	1.On selecting Image tile, USB Drive/Media Server should be displayed (Note: DLNA media servers on the same network will also be displayed when in connected mode)
+	2.You should only see folders and Image files.
+	3.You are able to select and play Image files.
 
 '''
 
@@ -38,17 +38,18 @@ def setup_teardown():
 	roku_ctl.get_dmesg_log()
 
 
-target_file = 'Kalimba'
-target_file_set = {'folder', 'audio'}
+target_file = 'leaves'
+target_file_set = {'folder', 'image'}
 
 
-def test_audio_tile():
+def test_photo_tile():
 	roku_ctl.enter_media_player()
-	roku_ctl.ir_enter('Audio', roku_ctl.media_player_home)
-	time.sleep(2)
+	roku_ctl.ir_enter('Photo', roku_ctl.layout_media_player_home)
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
+	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
 	dumpsys = roku_ctl._get_screen_xml()
 	type_list = set(re.findall(r'poster_(.*?)_fhd', dumpsys))
 	assert type_list == target_file_set, "Able to see another type file in list, not expected"
-	assert roku_ctl.ir_navigation(target_file, roku_ctl.get_u_disk_file_distribution()), "Can't able to location target file"
+	assert roku_ctl.ir_navigation(target_file,
+	                              roku_ctl.get_u_disk_file_distribution()), "Can't able to location target file"

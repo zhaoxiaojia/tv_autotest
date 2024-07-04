@@ -46,14 +46,14 @@ def setup_teardown():
 
 
 
-@pytest.fixture(scope='module', params=mode_list)
+@pytest.fixture(scope='module')
 def set_picture_mode(request):
-	roku_ctl.set_picture_mode(request.param)
+	roku_ctl.set_picture_mode(mode_list)
 
 
-@pytest.fixture(scope='module', params=size_list)
+@pytest.fixture(scope='module')
 def set_picture_size(request):
-	roku_ctl.set_picture_size(request.param)
+	roku_ctl.set_picture_size(size_list)
 
 
 def test_hdmirx_info():

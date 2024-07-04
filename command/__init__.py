@@ -11,7 +11,7 @@
 
 class Common:
 	show_video_width = 'cat /sys/class/video/frame_width'
-	show_video_height = 'cat /sys/class/video/frame_width'
+	show_video_height = 'cat /sys/class/video/frame_height'
 	show_frame_decoded = 'cat /sys/module/aml_media/parameters/new_frame_count'
-	show_windows_location = 'cat /sys/module/aml_media/parameters/new_frame_count'
+	show_windows_location = 'cat /sys/class/video/axis'
 	show_frame_rate = 'cat /sys/class/video/frame_rate'
