@@ -67,9 +67,10 @@ COMMANDS = {
 
 SENSORS = ("acceleration", "magnetic", "orientation", "rotation")
 
-roku_lux = YamlTool(os.getcwd() + '/config/roku/roku_changhong.yaml')
+# roku_lux = YamlTool(os.getcwd() + '/config/roku/roku_changhong.yaml')
 roku_config = YamlTool(os.getcwd() + '/config/config.yaml')
 roku_ip = roku_config.get_note("connect_type")['telnet']['ip']
+roku_wildcard = roku_config.get_note("connect_type")['telnet']['wildcard']
 # roku_ser = roku_config.get_note('dut_serial')
 
 lock = threading.Lock()
@@ -179,18 +180,13 @@ class RokuCtrl(Roku, Ir):
 		                                         ['Autorun - [On]'], ['OK']]
 		# self.layout_launcher = [['Home'], ['Live TV'], ['What to Watch'], ['Featured Free'], ['Sports'], ['Search'],
 		#                         ['Streaming Store'], ['Settings'], ['Secret Screens'], ['Debug']]
-		self.layout_launcher = [['Home'], ['Save list'], ['Search'], ['Streaming Store'], ['Settings'],
-		                        ['Secret Screens'], ['Debug']]
-		# self.layout_launcher_setting = [['Network'], ['Remotes & devices'], ['Theme'], ['Accessibility'],
+		# self.layout_launcher = [['Home'], ['Save list'], ['Search'], ['Streaming Store'], ['Settings'],
+		#                         ['Secret Screens'], ['Debug']]
+		# self.layout_launcher_setting = [['Network'], ['Remote controls & devices'], ['Theme'], ['Accessibility'],
 		#                                 ['TV picture settings'], ['TV inputs'], ['Audio'], ['Parental controls'],
 		#                                 ['Guest Mode'], ['Home screen'], ['Payment method'],
 		#                                 ['Apple AirPlay and HomeKit'],
 		#                                 ['Legal notices'], ['Privacy'], ['Help'], ['System']]
-		self.layout_launcher_setting = [['Network'], ['Remote controls & devices'], ['Theme'], ['Accessibility'],
-		                                ['TV picture settings'], ['TV inputs'], ['Audio'], ['Parental controls'],
-		                                ['Guest Mode'], ['Home screen'], ['Payment method'],
-		                                ['Apple AirPlay and HomeKit'],
-		                                ['Legal notices'], ['Privacy'], ['Help'], ['System']]
 
 	def __getattr__(self, name):
 		if name not in COMMANDS and name not in SENSORS:
@@ -341,6 +337,7 @@ class RokuCtrl(Roku, Ir):
 			for child_1 in child.iter():
 				if child_1.tag == 'TrickPlayBar' and not child_1.attrib.get('name'):
 					process_index = child_1.find('Label').attrib['text']
+					logging.info(process_index)
 					logging.info(int(process_index.split(':')[0]) * 60 + int(process_index.split(":")[1]))
 					return int(process_index.split(':')[0]) * 60 + int(process_index.split(":")[1])
 
@@ -373,6 +370,7 @@ class RokuCtrl(Roku, Ir):
 		logging.info(f'index {self.ir_current_location} {target}')
 		current_index = self.get_ir_index(self.ir_current_location, array)
 		target_index = self.get_ir_index(target, array)
+		# logging.info(f'current index {current_index} target {target_index}')
 		x_step = abs(target_index[0] - current_index[0])
 		y_step = abs(target_index[1] - current_index[1])
 		if x_step == 0 and y_step == 0:
@@ -391,7 +389,7 @@ class RokuCtrl(Roku, Ir):
 
 	def ir_enter(self, target, array):
 		self.ir_navigation(target, array)
-		self.select(time=0.5)
+		self.select(time=2)
 
 	def media_playback(self, target, array):
 		self.ir_enter(target, array)
@@ -460,7 +458,23 @@ class RokuCtrl(Roku, Ir):
 		if temp not in node_list:
 			node_list.append(temp)
 		self.media_player_dumpsys = node_list
-		logging.info(self.media_player_dumpsys)
+		logging.info(f'layout info {self.media_player_dumpsys}')
+		return node_list
+
+	def get_launcher_element(self,target_element):
+		node_list = []
+		current_file = ''
+		for child in self._get_xml_root():
+			for child_1 in child.iter():
+				# 解析StandardGridItemComponent element
+				if child_1.tag == target_element:
+					index = int(child_1.attrib['index'])
+					for child_2 in child_1.iter():
+						if child_2.tag == 'Label':
+							text = child_2.attrib['text']
+							if text and [text] not in node_list:
+								node_list.append([child_2.attrib['text']])
+		logging.info(node_list)
 		return node_list
 
 	@classmethod
@@ -470,7 +484,7 @@ class RokuCtrl(Roku, Ir):
 			'off': 'echo 0x2 > /sys/class/remote/amremote/protocol'
 		}
 		logging.info(f'Set roku ir {status}')
-		pytest.executer.checkoutput(ir_command[status])
+		pytest.executer.execute_cmd(ir_command[status])
 
 	def get_display_size(self, size):
 		for _ in range(9):
@@ -486,11 +500,11 @@ class RokuCtrl(Roku, Ir):
 
 	def get_display_info(self):
 		...
-		width = pytest.executer.checkoutput(Common.show_video_width)
-		height = pytest.executer.checkoutput(Common.show_video_height)
-		frame = pytest.executer.checkoutput(Common.show_frame_decoded)
-		frame_rate = pytest.executer.checkoutput(Common.show_frame_rate)
-		logging.info(f'width : {width}\n height : {height}\n frame : {frame}\n frame_rate : {frame_rate}\n')
+		# width = pytest.executer.checkoutput(Common.show_video_width)
+		# height = pytest.executer.checkoutput(Common.show_video_height)
+		# frame = pytest.executer.checkoutput(Common.show_frame_decoded)
+		# frame_rate = pytest.executer.checkoutput(Common.show_frame_rate)
+		# logging.info(f'width : {width}\n height : {height}\n frame : {frame}\n frame_rate : {frame_rate}\n')
 
 	def get_display_mode(self, mode):
 		for _ in range(9):
@@ -634,7 +648,7 @@ class RokuCtrl(Roku, Ir):
 
 		logging.info('start telnet 8080 to caputre kernel log ')
 		tl = TelnetTool(self.ip, 'sandia')
-		info = tl.checkoutput(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
+		info = tl.execute_cmd(f'telnet {self.ip} 8080', wildcard=b'onn. Roku TV')
 		# logging.info(info)
 		tl.execute_cmd('logcast start')
 		time.sleep(1)

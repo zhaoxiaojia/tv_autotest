@@ -39,8 +39,9 @@ Expected Result:
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
-	roku_ctl.ir_enter('Settings', roku_ctl.layout_launcher)
-	roku_ctl.ir_enter('TV picture settings', roku_ctl.layout_launcher_setting)
+	roku_ctl.home(time=2)
+	roku_ctl.ir_enter('Settings', roku_ctl.get_launcher_element('LabelListNativeItem'))
+	roku_ctl.ir_enter('TV picture settings', roku_ctl.get_launcher_element('ArrayGridItem'))
 	for _ in range(10):
 		roku_ctl.get_ir_focus()
 		if 'HDR notification' in roku_ctl.ir_current_location:
@@ -69,6 +70,8 @@ def test_video_playback():
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	pytest.executer.execute_cmd('logcat -c')
 	roku_ctl.media_playback(target_file,
 	                        roku_ctl.get_u_disk_file_distribution()), "Can't able to playback target file"

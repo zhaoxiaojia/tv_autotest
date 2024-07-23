@@ -43,13 +43,13 @@ The m3u playlist will be displayed on the top line with the folders regardless o
 '''
 
 
-@pytest.fixture(autouse=True)
-def setup_teardown():
-	yield
-	roku_ctl.back(time=1)
-	roku_ctl.back(time=1)
-	roku_ctl.home(time=1)
-	roku_ctl.get_dmesg_log()
+# @pytest.fixture(autouse=True)
+# def setup_teardown():
+# 	yield
+# 	roku_ctl.back(time=1)
+# 	roku_ctl.back(time=1)
+# 	roku_ctl.home(time=1)
+# 	roku_ctl.get_dmesg_log()
 
 
 def test_file_type():
@@ -57,22 +57,27 @@ def test_file_type():
 	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	for i in ['audio', 'image', 'video']:
 		roku_ctl.info(time=1)
-		for _ in range(5):
-			if 'Media type' in roku_ctl.ir_current_location:
-				break
+		temp = i.title()
+		if i == 'image':
+			temp = 'Photo'
+		roku_ctl.get_ir_focus(secret=True)
+		if 'Media type' not in roku_ctl.ir_current_location:
 			roku_ctl.down(time=1)
-			roku_ctl.get_ir_focus()
-		roku_ctl.select(time=1)
-		if 'Media type - [All]' in roku_ctl._get_screen_xml():
+		for _ in range(10):
+			if temp in roku_ctl.ir_current_location:
+				break
 			roku_ctl.select(time=1)
+			roku_ctl.get_ir_focus(secret=True)
 		for _ in range(5):
 			if 'OK' in roku_ctl.ir_current_location:
+				roku_ctl.select(time=1)
 				break
 			roku_ctl.down(time=1)
-			roku_ctl.get_ir_focus()
-		roku_ctl.select(time=1)
+			roku_ctl.get_ir_focus(secret=True)
 		dumpsys = roku_ctl._get_screen_xml()
 		type_list = set(re.findall(r'poster_(.*?)_fhd', dumpsys))
 		assert type_list == {'folder', i}, "Able to see another type file in list, not expected"

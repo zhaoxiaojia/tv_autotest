@@ -25,7 +25,7 @@ timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 # 参数为需要运行的测试用例 可以是文件或者文件夹目录
 # test_case = 'test/roku/Hdmi/CEA-861/test_C84431.py'
 # test_case = 'test/roku/Usb-Local/UI/Media-Player-Home-Screen/test_T825138.py'
-test_case = 'test/roku/Usb-Local/FunctionalAudio/test_T825173.py'
+test_case = 'test/roku/Usb-Local/FunctionalVideo/test_T825165.py'
 # test_case = 'test/roku/test_demo.py'
 report_parent_path = test_case.replace('test', 'report')
 
@@ -89,7 +89,8 @@ if __name__ == '__main__':
 	# allure_cmd = f'--alluredir=./allure'
 	tm_cmd = f'--pytest-tmreport-name=report.html'
 	# cmd = ['-v', '--capture=sys', '--html=report.html', f'--resultpath={timestamp}', test_case, allure_cmd]
-	cmd = ['-v', '--capture=sys', tm_cmd, f'--resultpath={timestamp}', test_case]
+	# '--reruns','3', '--reruns-delay','5', '--maxfail=1',
+	cmd = ['-v',  '--capture=sys', tm_cmd, f'--resultpath={timestamp}', test_case]
 
 	pytest.main(cmd)
 

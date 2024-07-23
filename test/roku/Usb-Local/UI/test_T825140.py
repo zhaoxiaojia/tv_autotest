@@ -48,6 +48,8 @@ def test_photo_tile():
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	dumpsys = roku_ctl._get_screen_xml()
 	type_list = set(re.findall(r'poster_(.*?)_fhd', dumpsys))
 	assert type_list == target_file_set, "Able to see another type file in list, not expected"

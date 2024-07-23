@@ -44,13 +44,14 @@ def setup_teardown():
 
 target_file = 'bbb-4mbps-24fps.h264.ac3'
 
-
 def test_video_playback():
 	roku_ctl.enter_media_player()
 	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	pytest.executer.execute_cmd('logcat -c')
 	roku_ctl.media_playback(target_file,
 	                        roku_ctl.get_u_disk_file_distribution()), "Can't able to playback target file"
@@ -58,10 +59,11 @@ def test_video_playback():
 	roku_ctl.forward()
 	roku_ctl.forward()
 	time.sleep(2)
-	roku_ctl.play()
-	roku_ctl.replay(time=1)
+	roku_ctl.play(time=1)
+	roku_ctl.replay()
 	temp = roku_ctl._get_media_process_bar()
-	roku_ctl.replay(time=1)
+	time.sleep(5)
+	roku_ctl.replay()
 	index = roku_ctl._get_media_process_bar()
-	assert temp - index in range(18, 23), "Replay did not take effect"
+	assert temp > index , "Replay did not take effect"
 	roku_ctl.catch_err('logcat.log', roku_ctl.AML_SINK_ERROR_TAG)

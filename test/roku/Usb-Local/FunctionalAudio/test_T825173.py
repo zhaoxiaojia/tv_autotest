@@ -39,7 +39,6 @@ Expected Result:
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
-
 	yield
 	roku_ctl.back(time=1)
 	roku_ctl.back(time=1)
@@ -57,8 +56,11 @@ def test_audio_playback():
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
+	pytest.executer.execute_cmd('logcat -c')
 	roku_ctl.media_playback(target_file,
 	                        roku_ctl.get_u_disk_file_distribution()), "Can't able to playback target file"
-	pytest.executer.execute_cmd('logcat -c')
+
 	roku_ctl.analyze_logcat(roku_ctl.AUDIO_STATUS_TAG)
 	time.sleep(3)

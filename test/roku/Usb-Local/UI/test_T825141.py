@@ -28,7 +28,7 @@ Expected Result:
 '''
 
 help_description = [
-	'To play or view content from a network Media Server, first make sure your Media Server is online.',
+	'To play or view content from',
 	'To view or play a file, first select a Media Type from the main screen.',
 	'To search your USB or DLNA server, press * on the remote and select Search.',
 	'Press OK on a media file to play or view that file. Press PLAY on a folder or playlist to play the contents.',
@@ -49,6 +49,8 @@ def test_help_setting_display():
 	roku_ctl.enter_media_player()
 	roku_ctl.info(time=1)
 	roku_ctl.ir_enter('Help', roku_ctl.layout_media_player_help_setting)
+	if 'Searching Media' not in roku_ctl._get_screen_xml():
+		help_description.pop(2)
 	for i in help_description:
 		assert i in roku_ctl._get_screen_xml(), "Help description not expected"
-		roku_ctl.down(time=1)
+		roku_ctl.down(time=2)

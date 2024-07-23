@@ -52,12 +52,13 @@ class TelnetTool(Executer):
 		if not wildcard:
 			wildcard = self.wildcard
 		logging.info(f'telnet type cmd : {cmd}')
+		self.tn.read_eager()
 		self.tn.write(cmd.encode('ascii') + b'\n')
 		try:
-			res = self.tn.read_eager().decode('utf-8').replace('\r\n', '\n')
+			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
 		except Exception as e:
 			self.tn.open(self.ip)
-			res = self.tn.read_eager().decode('utf-8').replace('\r\n', '\n')
+			res = self.tn.read_very_eager().decode('utf-8').replace('\r\n', '\n')
 		time.sleep(1)
 		return res.strip()
 

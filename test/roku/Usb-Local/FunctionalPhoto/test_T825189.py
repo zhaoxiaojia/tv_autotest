@@ -29,14 +29,14 @@ Expected Result:
 '''
 
 
-# @pytest.fixture(autouse=True)
-# def setup_teardown():
-# 	yield
-# 	roku_ctl.back(time=1)
-# 	roku_ctl.back(time=1)
-# 	roku_ctl.back(time=1)
-# 	roku_ctl.home(time=1)
-# 	roku_ctl.get_dmesg_log()
+@pytest.fixture(autouse=True)
+def setup_teardown():
+	yield
+	roku_ctl.back(time=1)
+	roku_ctl.back(time=1)
+	roku_ctl.back(time=1)
+	roku_ctl.home(time=1)
+	roku_ctl.get_dmesg_log()
 
 
 target_file = '3840x2160'
@@ -48,21 +48,25 @@ def test_photo_playback():
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	roku_ctl.media_playback(target_file,
 	                        roku_ctl.get_u_disk_file_distribution()), "Can't able to playback target file"
 	for i in range(10):
 		xml_info = roku_ctl._get_screen_xml()
 		if 'hudTitle' in xml_info and target_file in xml_info:
-			time.sleep(3)
+			time.sleep(0.5)
 			break
-		time.sleep(1)
 	else:
 		assert False, "Can't display target photo"
-	roku_ctl.play()
-	time.sleep(8)
+	logging.info('Photo is display')
+	logging.info('Pause')
+	roku_ctl.play(time=1)
+	time.sleep(15)
 	xml_info = roku_ctl._get_screen_xml()
-	assert 'hudTitle' in xml_info and target_file in xml_info, "File shouldn't be changed"
-	roku_ctl.play()
-	time.sleep(8)
+	assert 'hudTitle' in xml_info and f'text="{target_file}"' in xml_info, "File shouldn't be changed"
+	logging.info('Resume')
+	roku_ctl.play(time=1)
+	time.sleep(15)
 	xml_info = roku_ctl._get_screen_xml()
-	assert 'hudTitle' in xml_info and target_file not in xml_info, "File should be changed"
+	assert 'hudTitle' in xml_info and f'text="{target_file}"' not in xml_info, "File should be changed"

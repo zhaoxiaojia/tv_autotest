@@ -56,6 +56,8 @@ def test_picture_size_mode():
 	roku_ctl.ir_enter('Video', roku_ctl.layout_media_player_home)
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	roku_ctl.ir_enter(target_file, roku_ctl.get_u_disk_file_distribution())
 	if 'Play from beginning' in roku_ctl._get_screen_xml():
 		roku_ctl.down(time=1)

@@ -56,6 +56,8 @@ def test_photo_playback():
 	assert roku_ctl.check_udisk(), "No USB flash drive detected"
 	roku_ctl.wait_for_element("Search", timeout=5)
 	roku_ctl.select(time=1)
+	roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+	time.sleep(1)
 	roku_ctl.ir_enter('JPEG', roku_ctl.get_u_disk_file_distribution())
 	roku_ctl.media_playback(target_file,
 	                        roku_ctl.get_u_disk_file_distribution()), "Can't able to playback target file"

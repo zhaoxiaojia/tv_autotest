@@ -55,6 +55,8 @@ def test_file_sort_default_sort():
 	for i in ['Video', 'Audio', 'Photo']:
 		roku_ctl.ir_enter(i, roku_ctl.layout_media_player_home)
 		roku_ctl.select(time=1)
+		roku_ctl.ir_enter('roku_usb', roku_ctl.get_u_disk_file_distribution())
+		time.sleep(1)
 		for _ in range(3):
 			temp = roku_ctl.get_u_disk_file_distribution()
 			roku_ctl.info(time=1)
@@ -69,10 +71,11 @@ def test_file_sort_default_sort():
 					break
 				roku_ctl.down(time=1)
 				roku_ctl.get_ir_focus()
-			roku_ctl.select(time=1)
+			roku_ctl.select(time=2)
 			sort_list = roku_ctl.get_u_disk_file_distribution()
 			logging.info(f'切换排序前 {[i for arr in temp for i in arr]}')
 			logging.info(f'切换排序后 {[i for arr in sort_list for i in arr]}')
 			assert temp != sort_list, "File list should not be the same"
+		roku_ctl.back(time=1)
 		roku_ctl.back(time=1)
 		roku_ctl.back(time=1)
