@@ -268,7 +268,9 @@ class RokuCtrl(Roku, Ir):
 		# 	return ''
 
 		if not secret:
+			# 默认使用 focus 页面获取光标
 			for _ in range(5):
+				logging.info('secret')
 				url = f'http://{roku_ip}:8060/query/focus/secret'
 				r = requests.get(url).content.decode('utf-8')
 				if 'SGScreen.RMPScene.ComponentController_0.ViewManager_0.ViewStack_0.MediaView_0.Video_' in r:
@@ -281,12 +283,13 @@ class RokuCtrl(Roku, Ir):
 					break
 
 				focused = re.findall(r'<text>(.*?)</text>', r)
-
+				logging.info(f'sercet {focused[0]}')
 				if focused:
 					self.ir_current_location = focused[0]
 					return focused[0]
 
 		node_list = []
+		# 解析 页面布局xml 信息 从中获取 当前遥控器 光标位置
 		for child in self._get_xml_root():
 			for child_1 in child.iter():
 				if child_1.tag == 'ItemDetailsView':
@@ -332,6 +335,14 @@ class RokuCtrl(Roku, Ir):
 			self.ir_current_location = node_list[-1].find('LayoutGroup').find('Label').attrib['text']
 
 	def _get_media_process_bar(self, filename='dumpsys.xml'):
+		'''
+		获取播放 界面是的 process 值
+		Args:
+			filename:
+
+		Returns: 播放进度 单位为妙
+
+		'''
 		process_index = '0:0'
 		for child in self._get_xml_root():
 			for child_1 in child.iter():
@@ -355,43 +366,80 @@ class RokuCtrl(Roku, Ir):
 			target_array = self.load_array(self.current_target_array + '.txt')
 		else:
 			target_array = array
-		# logging.info(f"Try to get index of  {name}")
-		# logging.info(f'Target array {array}')
+		logging.debug(f"Try to get index of  {name}")
+		logging.debug(f'Target array {array}')
 		for i in target_array:
 			for y in i:
 				if name == y:
-					# logging.info(f'Get location : {target_array.index(i)}  {i.index(y)}')
-					return (target_array.index(i), i.index(y))
+					logging.debug(f'Get location : {target_array.index(i)}  {i.index(y)} {len(i)}')
+					return (target_array.index(i), i.index(y)),len(i)
 		logging.warning("Can't find such this widget")
 		return None
 
-	def ir_navigation(self, target, array):
-		self.get_ir_focus()
-		logging.info(f'index {self.ir_current_location} {target}')
-		current_index = self.get_ir_index(self.ir_current_location, array)
-		target_index = self.get_ir_index(target, array)
+	def ir_navigation(self, target, array,secret=False):
+		'''
+		页面导航
+
+		通过获取页面控件信息, 移动遥控器光标 至目标控件
+		Args:
+			target: 目标控件
+			array: 当前页面布局信息 二维数组
+			secret: 是否使用focus获取 当前控件
+
+		Returns:
+
+		'''
+		logging.debug(f'navigation {target}')
+		self.get_ir_focus(secret=secret)
+		current_index,_ = self.get_ir_index(self.ir_current_location, array)
+		target_index,list_len  = self.get_ir_index(target, array)
 		# logging.info(f'current index {current_index} target {target_index}')
 		x_step = abs(target_index[0] - current_index[0])
-		y_step = abs(target_index[1] - current_index[1])
+		y_step= abs(target_index[1] - current_index[1])
 		if x_step == 0 and y_step == 0:
-			logging.info('navigation done')
+			logging.info(f'navigation {target} done')
 			return True
-		if target_index[0] > current_index[0]:
-			self.down(time=1)
-		elif target_index[0] == current_index[0]:
-			if target_index[1] > current_index[1]:
-				self.right(time=1)
-			else:
+
+		if x_step > len(array) / 2:
+			for i in range(current_index[0]+len(array)-target_index[0]):
+				self.up(time=1)
+		else:
+			for i in range(x_step):
+				self.down(time=1)
+
+		if y_step > list_len / 2:
+			for i in range(current_index[1] + len(list_len) - target_index[1]):
 				self.left(time=1)
 		else:
-			self.up(time=1)
+			for i in range(y_step):
+				self.left(time=1)
+
 		return self.ir_navigation(target, array)
 
-	def ir_enter(self, target, array):
-		self.ir_navigation(target, array)
+	def ir_enter(self, target, array,secret=False):
+		'''
+		导航 遥控器光标至目标 并进入
+		Args:
+			target:
+			array:
+			secret:
+
+		Returns:
+
+		'''
+		self.ir_navigation(target, array,secret)
 		self.select(time=2)
 
 	def media_playback(self, target, array):
+		'''
+		进入 media player 界面
+		Args:
+			target:
+			array:
+
+		Returns:
+
+		'''
 		self.ir_enter(target, array)
 		time.sleep(1)
 		info = self._get_screen_xml()
@@ -425,6 +473,15 @@ class RokuCtrl(Roku, Ir):
 		return tree.getroot()
 
 	def wait_for_element(self, element, timeout=60):
+		'''
+		等待 ui 中刷新出某个界面
+		Args:
+			element: 目标控件
+			timeout: 超时时间
+
+		Returns:
+
+		'''
 		start = time.time()
 		while element not in self._get_screen_xml():
 			time.sleep(1)
@@ -462,6 +519,14 @@ class RokuCtrl(Roku, Ir):
 		return node_list
 
 	def get_launcher_element(self,target_element):
+		'''
+		获取 launcher 界面的 布局信息
+		Args:
+			target_element: 需要特殊捕捉的 网页元素
+
+		Returns: 布局信息 二维数组
+
+		'''
 		node_list = []
 		current_file = ''
 		for child in self._get_xml_root():
@@ -470,15 +535,23 @@ class RokuCtrl(Roku, Ir):
 				if child_1.tag == target_element:
 					index = int(child_1.attrib['index'])
 					for child_2 in child_1.iter():
-						if child_2.tag == 'Label':
+						if child_2.tag == 'Label' and 'renderPass' not in child_2.attrib:
 							text = child_2.attrib['text']
 							if text and [text] not in node_list:
 								node_list.append([child_2.attrib['text']])
-		logging.info(node_list)
+		logging.info(f'node_list {node_list}')
 		return node_list
 
 	@classmethod
 	def switch_ir(self, status):
+		'''
+		红外开关
+		Args:
+			status: 需要设置的状态
+
+		Returns:
+
+		'''
 		ir_command = {
 			'on': 'echo 0xD > /sys/class/remote/amremote/protocol',
 			'off': 'echo 0x2 > /sys/class/remote/amremote/protocol'
@@ -486,7 +559,15 @@ class RokuCtrl(Roku, Ir):
 		logging.info(f'Set roku ir {status}')
 		pytest.executer.execute_cmd(ir_command[status])
 
-	def get_display_size(self, size):
+	def set_display_size(self, size):
+		'''
+		设置 picture size
+		Args:
+			size: 目标size
+
+		Returns:
+
+		'''
 		for _ in range(9):
 			if self.get_ir_focus() == size:
 				self.ptc_size = size
@@ -506,7 +587,15 @@ class RokuCtrl(Roku, Ir):
 		# frame_rate = pytest.executer.checkoutput(Common.show_frame_rate)
 		# logging.info(f'width : {width}\n height : {height}\n frame : {frame}\n frame_rate : {frame_rate}\n')
 
-	def get_display_mode(self, mode):
+	def set_display_mode(self, mode):
+		'''
+		设置 picture mode
+		Args:
+			mode: 目标mode
+
+		Returns:
+
+		'''
 		for _ in range(9):
 			if self.get_ir_focus() == mode:
 				self.ptc_mode = mode
@@ -529,10 +618,10 @@ class RokuCtrl(Roku, Ir):
 
 		'''
 		self.info(time=3)
-		if pytest.light_sensor:
-			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-			if not res:
-				self.info()
+		# if pytest.light_sensor:
+		# 	res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+		# 	if not res:
+		self.info()
 		self.down(time=1)
 		self.select(time=1)
 		self.down(time=1)
@@ -540,7 +629,7 @@ class RokuCtrl(Roku, Ir):
 			logging.info(f'Try to set picture mode into {i}')
 			self.select(time=1)
 			if self.ptc_mode != i:
-				self.get_display_mode(i)
+				self.set_display_mode(i)
 		self.back(time=1)
 		self.back(time=1)
 
@@ -555,10 +644,10 @@ class RokuCtrl(Roku, Ir):
 
 		'''
 		self.info(time=3)
-		if pytest.light_sensor:
-			res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
-			if not res:
-				self.info()
+		# if pytest.light_sensor:
+		# 	res = pytest.light_sensor.count_kpi(0, roku_lux.get_note('setting_white')[pytest.panel])
+		# 	if not res:
+		self.info()
 		self.down(time=1)
 		self.select(time=1)
 		self.down(time=1)
@@ -570,7 +659,7 @@ class RokuCtrl(Roku, Ir):
 			logging.info(f'Try to set picture size into {i}')
 			self.select(time=1)
 			if self.ptc_size != i:
-				self.get_display_size(i)
+				self.set_display_size(i)
 		self.back(time=1)
 		self.back(time=1)
 		self.back(time=1)
@@ -600,6 +689,7 @@ class RokuCtrl(Roku, Ir):
 
 	def set_caption(self, language):
 		'''
+		设置字幕
 		前提条件 字幕 需要被打开
 		Args:
 			language:
@@ -628,13 +718,25 @@ class RokuCtrl(Roku, Ir):
 			logging.warning(f"Can't set language {language}")
 
 	def get_dmesg_log(self):
+		'''
+		获取 dmesg 相关打印 存至 dmesg.log
+		Returns:
+
+		'''
 		with open('dmesg.log', 'a') as f:
 			info = pytest.executer.checkoutput('dmesg')
 			f.write(info)
 		pytest.executer.checkoutput('dmesg -c')
 
 	def get_kernel_log(self, filename='kernel.log'):
+		'''
+		新开一个 thread 获取8070 端口的 kernel 信息
+		Args:
+			filename: 用于保存打印的文件名
 
+		Returns:
+
+		'''
 		def run_logcast(filename):
 			while True:
 				info = tl.tn.read_very_eager()
@@ -740,6 +842,14 @@ class RokuCtrl(Roku, Ir):
 				raise EnvironmentError("Pls check ir control")
 
 	def get_hdmirx_info(self, **kwargs):
+		'''
+		获取 hdmirx 相关信息
+		Args:
+			**kwargs:
+
+		Returns:
+
+		'''
 		logging.info(f'hdmirx for expect : {kwargs}')
 
 		def match(info):
@@ -783,6 +893,11 @@ class RokuCtrl(Roku, Ir):
 			return True
 
 	def enter_media_player(self):
+		'''
+		进入 media player
+		Returns:
+
+		'''
 		self['2213'].launch()
 		count = 0
 		while True:

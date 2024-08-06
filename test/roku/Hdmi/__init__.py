@@ -7,3 +7,7 @@
 # @Author     : chao.li
 # @Software   : PyCharm
 """
+
+import pytest
+
+pytest.executer.execute_cmd('echo log_level 0x2b > /sys/class/hdmirx/hdmirx0/param')

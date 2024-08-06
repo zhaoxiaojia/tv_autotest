@@ -7,3 +7,5 @@
 # @Author     : chao.li
 # @Software   : PyCharm
 """
+
+from test.roku.UsbLocal import *
