@@ -225,6 +225,14 @@ class RokuCtrl(Roku, Ir):
 			return command
 
 	def capture_screen(self, filename):
+		'''
+		获取当前ui界面的 屏幕截图
+		Args:
+			filename:  用于保存的文件名
+
+		Returns:
+
+		'''
 		logging.info("\rStart to capture screen ....\r")
 		para = {'param-image-type': 'jpeg'}
 		url = "http://%s:8060/capture-screen/secret" % (roku_ip)
@@ -251,21 +259,12 @@ class RokuCtrl(Roku, Ir):
 
 	def get_ir_focus(self, filename='dumpsys.xml', secret=False):
 		'''
-		从roku 服务器获取当天tv 页面的空间xml
+		从roku 服务器获取当前tv 页面的控件 xml
 		解析xml 获取 focused="true"
 		返回解析 得到的 列表中 最后一个元素
 		Returns:
 
 		'''
-		# http://192.168.0.121:8060/query/focus/secret
-		# url = f'http://{self.ip}:8060/query/focus/secret'
-		# r = requests.get(url)
-		# result = re.findall(r'<text>(.*?)</text>', r.content.decode('utf-8'), re.S)
-		# if result:
-		# 	logging.info(f"Current ir focus {result[0]}")
-		# 	return result[0]
-		# else:
-		# 	return ''
 
 		if not secret:
 			# 默认使用 focus 页面获取光标
@@ -336,9 +335,11 @@ class RokuCtrl(Roku, Ir):
 
 	def _get_media_process_bar(self, filename='dumpsys.xml'):
 		'''
-		获取播放 界面是的 process 值
+		分析dumpsys.xml 中的信息
+		获取播放 界面的 process 值
+
 		Args:
-			filename:
+			filename: 待分析的文件
 
 		Returns: 播放进度 单位为妙
 
@@ -354,7 +355,7 @@ class RokuCtrl(Roku, Ir):
 
 	def get_ir_index(self, name, array):
 		'''
-
+		从布局信息 二维数组中 获取 控件的下标
 		Args:
 			name: 需要查询的目标 名字
 			array: 需要查询的 二维数组

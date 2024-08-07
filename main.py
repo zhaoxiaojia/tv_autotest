@@ -37,8 +37,6 @@ report_parent_path = test_case.replace('test', 'report')
 report_path = fr'./report/{timestamp}'
 allure_history_file = ''
 
-# print(allure_path)
-# print(allure_parent_path)
 
 # 获取下一个文件夹的名称，以及最近一个趋势的数据
 # def get_dir():
